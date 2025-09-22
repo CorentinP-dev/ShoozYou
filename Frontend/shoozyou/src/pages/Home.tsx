@@ -13,7 +13,7 @@ function paginate<T>(arr: T[], page: number, size: number) {
 }
 
 export default function Home() {
-    const { loading, list } = useProducts();
+    const { loading, list } = useProducts({ limit: 120 });
 
     // pagination via ?page=
     const [search, setSearch] = useSearchParams();

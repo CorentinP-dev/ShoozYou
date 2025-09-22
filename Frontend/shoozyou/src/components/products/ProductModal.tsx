@@ -12,9 +12,14 @@ type Props = {
 
 const sizesForCategory = (cat: Product["category"]) => {
     switch (cat) {
-        case "homme": return [40, 41, 42, 43, 44, 45, 46];
-        case "femme": return [36, 37, 38, 39, 40, 41];
-        default:      return [27, 28, 29, 30, 31, 32, 33, 34];
+        case "homme":
+            return [40, 41, 42, 43, 44, 45, 46];
+        case "femme":
+            return [36, 37, 38, 39, 40, 41];
+        case "enfant":
+            return [27, 28, 29, 30, 31, 32, 33, 34];
+        default:
+            return [36, 37, 38, 39, 40, 41, 42, 43];
     }
 };
 
@@ -51,8 +56,9 @@ export default function ProductModal({ open, product, onClose }: Props) {
 
                 <div className="pmodal-body">
                     <h2 className="pmodal-title">{product.name}</h2>
+                    <div className="pmodal-tag">{categoryLabels[product.category]}</div>
                     <div className="pmodal-price">{formatPrice(product.price)}</div>
-                    <p className="pmodal-desc">Parfaites pour un style quotidien. Confort et durabilité 💫</p>
+                    <p className="pmodal-desc">{product.description || "Parfaites pour un style quotidien. Confort et durabilité 💫"}</p>
 
                     <div className="pmodal-block">
                         <div className="pmodal-label">Taille</div>
@@ -94,3 +100,9 @@ export default function ProductModal({ open, product, onClose }: Props) {
         </Modal>
     );
 }
+const categoryLabels: Record<Product["category"], string> = {
+    homme: "Homme",
+    femme: "Femme",
+    enfant: "Enfant",
+    mixte: "Mixte",
+};

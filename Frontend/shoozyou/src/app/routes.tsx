@@ -5,7 +5,7 @@ import Homme from "../pages/Homme";
 import Femme from "../pages/Femme";
 import Enfant from "../pages/Enfant";
 import Cart from "../pages/Cart";
-import Login from "../pages/auth/Login";
+import Login from "../pages/Login";
 import Privacy from "../pages/Privacy";
 import CookiesPolicy from "../pages/Cookies";
 import SellerDashboard from "../pages/seller/SellerDashboard";

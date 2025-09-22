@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { fetchAllProducts } from "../../services/productService";
-import type { Product } from "../../services/productService";
+import { fetchAllProducts, type FetchProductsOptions, type Product } from "../../services/productService";
 
-export function useProducts() {
+export function useProducts(options: FetchProductsOptions = {}) {
     const [loading, setLoading] = useState(true);
     const [list, setList] = useState<Product[]>([]);
     const [error, setError] = useState<unknown>(null);
@@ -10,11 +9,12 @@ export function useProducts() {
     useEffect(() => {
         let mounted = true;
         setLoading(true);
-        fetchAllProducts()
+        setError(null);
+        fetchAllProducts(options)
             .then(items => { if (mounted) { setList(items); setLoading(false); } })
             .catch(e => { if (mounted) { setError(e); setLoading(false); } });
         return () => { mounted = false; };
-    }, []);
+    }, [JSON.stringify(options)]);
 
     return { loading, list, error };
 }

@@ -1,45 +1,118 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Modal from "../../components/ui/Modal";
-import type { AdminCategory, AdminProduct, AdminSizeStock } from "../../services/adminRepo";
+import type { CreateAdminProductPayload, AdminProductDto } from "../../services/adminApi";
+import type { GenderDto, ShoeTypeDto } from "../../services/referenceApi";
+
+export type ProductFormValues = CreateAdminProductPayload;
 
 type Props = {
     open: boolean;
     onClose: () => void;
-    onSubmit: (data: Omit<AdminProduct, "id">) => void;
-    initial?: AdminProduct | null;
+    onSubmit: (values: ProductFormValues) => Promise<void> | void;
+    initial?: AdminProductDto | null;
+    genders: GenderDto[];
+    shoeTypes: ShoeTypeDto[];
+    loadingReferences?: boolean;
+    submitting?: boolean;
+    errorMessage?: string | null;
 };
 
-const CATEGORIES: AdminCategory[] = ["Homme", "Femme", "Enfant"];
+const DEFAULT_STOCK = 50;
 
-export default function ProductFormModal({ open, onClose, onSubmit, initial }: Props) {
+export default function ProductFormModal({
+    open,
+    onClose,
+    onSubmit,
+    initial,
+    genders,
+    shoeTypes,
+    loadingReferences = false,
+    submitting = false,
+    errorMessage = null,
+}: Props) {
+    const [sku, setSku] = useState("");
     const [name, setName] = useState("");
-    const [category, setCategory] = useState<AdminCategory>("Enfant");
-    const [price, setPrice] = useState<number>(69.99);
-    const [sizes, setSizes] = useState<AdminSizeStock[]>([{ size: 30, stock: 10 }]);
+    const [description, setDescription] = useState("");
+    const [price, setPrice] = useState<number>(0);
+    const [stock, setStock] = useState<number>(DEFAULT_STOCK);
+    const [imageUrl, setImageUrl] = useState<string>("");
+    const [genderId, setGenderId] = useState<string | undefined>(undefined);
+    const [shoeTypeId, setShoeTypeId] = useState<string | undefined>(undefined);
+    const [localError, setLocalError] = useState<string | null>(null);
+
+    const genderOptions = useMemo(() => genders, [genders]);
+    const shoeTypeOptions = useMemo(() => shoeTypes, [shoeTypes]);
 
     useEffect(() => {
-        if (initial) {
-            setName(initial.name);
-            setCategory(initial.category);
-            setPrice(initial.price);
-            setSizes(initial.sizes.length ? initial.sizes : [{ size: 30, stock: 10 }]);
-        } else {
-            setName("");
-            setCategory("Enfant");
-            setPrice(69.99);
-            setSizes([{ size: 30, stock: 10 }]);
+        if (!open) {
+            return;
         }
+        if (initial) {
+            setSku(initial.sku);
+            setName(initial.name);
+            setDescription(initial.description);
+            setPrice(initial.price);
+            setStock(initial.stock);
+            setImageUrl(initial.imageUrl ?? "");
+            setGenderId(initial.genderId ?? undefined);
+            setShoeTypeId(initial.shoeTypeId ?? undefined);
+        } else {
+            setSku("");
+            setName("");
+            setDescription("");
+            setPrice(0);
+            setStock(DEFAULT_STOCK);
+            setImageUrl("");
+            setGenderId(undefined);
+            setShoeTypeId(undefined);
+        }
+        setLocalError(null);
     }, [initial, open]);
 
-    const addRow = () => setSizes(s => [...s, { size: 0, stock: 0 }]);
-    const removeRow = (i: number) => setSizes(s => s.filter((_, idx) => idx !== i));
-    const updateRow = (i: number, patch: Partial<AdminSizeStock>) =>
-        setSizes(s => s.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
+    useEffect(() => {
+        if (genderOptions.length === 0 || genderId) return;
+        setGenderId(initial?.genderId ?? genderOptions[0]?.id);
+    }, [genderOptions, genderId, initial?.genderId]);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const clean = sizes.filter(r => r.size && r.stock >= 0);
-        onSubmit({ name, category, price: Number(price), sizes: clean });
+    useEffect(() => {
+        if (shoeTypeOptions.length === 0 || shoeTypeId) return;
+        setShoeTypeId(initial?.shoeTypeId ?? shoeTypeOptions[0]?.id);
+    }, [shoeTypeOptions, shoeTypeId, initial?.shoeTypeId]);
+
+    const disableSubmit = submitting || loadingReferences;
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setLocalError(null);
+
+        if (!sku.trim()) {
+            setLocalError("Le SKU est obligatoire");
+            return;
+        }
+        if (!name.trim()) {
+            setLocalError("Le nom est obligatoire");
+            return;
+        }
+        if (!description.trim()) {
+            setLocalError("La description est obligatoire");
+            return;
+        }
+
+        try {
+            await onSubmit({
+                sku: sku.trim(),
+                name: name.trim(),
+                description: description.trim(),
+                price: Number(price),
+                stock: Number(stock),
+                imageUrl: imageUrl.trim() || undefined,
+                genderId,
+                shoeTypeId,
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Une erreur est survenue";
+            setLocalError(message);
+        }
     };
 
     return (
@@ -49,52 +122,64 @@ export default function ProductFormModal({ open, onClose, onSubmit, initial }: P
 
                 <div className="grid2">
                     <label className="field">
-                        <span>Nom</span>
-                        <input value={name} onChange={e => setName(e.target.value)} required />
+                        <span>SKU</span>
+                        <input value={sku} onChange={e => setSku(e.target.value)} required disabled={disableSubmit} />
                     </label>
                     <label className="field">
-                        <span>Catégorie</span>
-                        <select value={category} onChange={e => setCategory(e.target.value as AdminCategory)}>
-                            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        <span>Nom</span>
+                        <input value={name} onChange={e => setName(e.target.value)} required disabled={disableSubmit} />
+                    </label>
+                    <label className="field">
+                        <span>Description</span>
+                        <textarea value={description} onChange={e => setDescription(e.target.value)} required disabled={disableSubmit} />
+                    </label>
+                    <label className="field">
+                        <span>Image (URL)</span>
+                        <input value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="https://..." disabled={disableSubmit} />
+                    </label>
+                    <label className="field">
+                        <span>Prix (€)</span>
+                        <input type="number" step="0.01" min="0" value={price} onChange={e => setPrice(Number(e.target.value))} required disabled={disableSubmit} />
+                    </label>
+                    <label className="field">
+                        <span>Stock</span>
+                        <input type="number" min="0" value={stock} onChange={e => setStock(Number(e.target.value))} required disabled={disableSubmit} />
+                    </label>
+                    <label className="field">
+                        <span>Genre</span>
+                        <select value={genderId ?? ""} onChange={e => setGenderId(e.target.value || undefined)} disabled={loadingReferences || disableSubmit || genderOptions.length === 0}>
+                            {genderOptions.map(option => (
+                                <option key={option.id} value={option.id}>
+                                    {option.name}
+                                </option>
+                            ))}
                         </select>
                     </label>
                     <label className="field">
-                        <span>Prix</span>
-                        <input type="number" step="0.01" min="0" value={price} onChange={e => setPrice(Number(e.target.value))} required />
+                        <span>Type de chaussure</span>
+                        <select value={shoeTypeId ?? ""} onChange={e => setShoeTypeId(e.target.value || undefined)} disabled={loadingReferences || disableSubmit || shoeTypeOptions.length === 0}>
+                            {shoeTypeOptions.map(option => (
+                                <option key={option.id} value={option.id}>
+                                    {option.name}
+                                </option>
+                            ))}
+                        </select>
                     </label>
                 </div>
 
-                <div style={{ marginTop: 8 }}>
-                    <div style={{ fontWeight: 800, marginBottom: 6 }}>Tailles & stocks</div>
-                    <div className="sizes-editor">
-                        {sizes.map((row, idx) => (
-                            <div className="sizes-row" key={idx}>
-                                <input
-                                    className="sz-input"
-                                    type="number"
-                                    placeholder="Taille"
-                                    value={row.size}
-                                    onChange={e => updateRow(idx, { size: Number(e.target.value) })}
-                                    required
-                                />
-                                <input
-                                    className="sz-input"
-                                    type="number"
-                                    placeholder="Stock"
-                                    value={row.stock}
-                                    onChange={e => updateRow(idx, { stock: Number(e.target.value) })}
-                                    required
-                                />
-                                <button type="button" className="btn" onClick={() => removeRow(idx)}>Retirer</button>
-                            </div>
-                        ))}
+                {(localError || errorMessage) && (
+                    <div style={{ color: '#dc2626', marginTop: 8 }}>
+                        {localError || errorMessage}
                     </div>
-                    <button type="button" className="btn" onClick={addRow}>+ Ajouter une ligne</button>
-                </div>
+                )}
 
                 <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-                    <button type="button" className="btn" onClick={onClose}>Annuler</button>
-                    <button type="submit" className="btn-solid">{initial ? "Enregistrer" : "Créer"}</button>
+                    <button type="button" className="btn" onClick={onClose} disabled={submitting}>
+                        Annuler
+                    </button>
+                    <button type="submit" className="btn-solid" disabled={disableSubmit}>
+                        {submitting ? "Enregistrement…" : initial ? "Enregistrer" : "Créer"}
+                    </button>
                 </div>
             </form>
         </Modal>

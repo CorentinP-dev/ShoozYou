@@ -7,11 +7,10 @@ import ProductModal from "../components/products/ProductModal";
 import type { Product } from "../services/productService";
 
 const PAGE_SIZE = 20;
-const filter = (arr: any[]) => arr.filter(p => p.category === "femme");
 const paginate = <T,>(arr: T[], page: number, size: number) => arr.slice((page - 1) * size, (page - 1) * size + size);
 
 export default function Femme() {
-    const { loading, list } = useProducts();
+    const { loading, list } = useProducts({ genderSlug: "femme" });
     const [search, setSearch] = useSearchParams();
     const page = Math.max(1, Number(search.get("page")) || 1);
 
@@ -20,8 +19,7 @@ export default function Femme() {
     const [open, setOpen] = useState(false);
     const openModal = (p: Product) => { setSelected(p); setOpen(true); };
 
-    const filtered = useMemo(() => filter(list), [list]);
-    const pageItems = useMemo(() => paginate(filtered, page, PAGE_SIZE), [filtered, page]);
+    const pageItems = useMemo(() => paginate(list, page, PAGE_SIZE), [list, page]);
 
     return (
         <div className="page">
@@ -38,7 +36,7 @@ export default function Femme() {
                     <Pagination
                         page={page}
                         pageSize={PAGE_SIZE}
-                        total={filtered.length}
+                        total={list.length}
                         onPageChange={(p) => setSearch({ page: String(p) }, { replace: true })}
                     />
                 </>
