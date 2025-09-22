@@ -1,0 +1,64 @@
+/* ===== Variables ===== */
+:root{
+    --color-brand:#1B04AD;
+    --color-accent:#DDDAF1;
+    --color-text:#000;
+    --color-bg:#fff;
+
+    --nav-height:64px;
+    --container-max:1200px;
+    --radius:12px;
+    --shadow-1:0 6px 20px rgba(0,0,0,.08);
+
+    --font-brand:"Hit and Run", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    --font-ui:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+@media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important} }
+
+/* ===== Global / Reset ===== */
+*{box-sizing:border-box}
+html,body,#root{height:100%}
+body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-ui)}
+a{color:inherit;text-decoration:none}
+a:focus-visible,button:focus-visible{outline:3px solid var(--color-accent);outline-offset:2px}
+.container{max-width:var(--container-max);margin:0 auto;padding:0 16px}
+.sr-only{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
+
+/* ===== Navbar ===== */
+.nav-root{position:sticky;top:0;z-index:50;background:var(--color-brand);color:#fff;height:var(--nav-height);box-shadow:var(--shadow-1)}
+.nav-bar{height:var(--nav-height);display:flex;align-items:center;justify-content:space-between}
+.brand{display:inline-flex;align-items:center}
+.nav-desktop{display:none;gap:16px}
+.nav-link{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;transition:background .2s ease, transform .1s ease;font-weight:600;color:#fff}
+.nav-link:hover{background:rgba(255,255,255,.12)}
+.nav-link.active{background:rgba(255,255,255,.22)}
+.actions-desktop{display:flex;align-items:center;gap:8px}
+.icon-link{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px}
+.icon-link:hover{background:rgba(255,255,255,.12)}
+.nav-toggle{display:inline-flex;flex-direction:column;gap:4px;background:transparent;border:none;cursor:pointer;padding:8px;border-radius:8px;margin-left:8px}
+.nav-toggle:hover{background:rgba(255,255,255,.12)}
+.nav-toggle .bar{width:22px;height:2px;background:#fff;display:block}
+.nav-mobile{position:fixed;left:0;right:0;top:var(--nav-height);background:var(--color-brand);transform:translateY(-8px);opacity:0;pointer-events:none;transition:transform .2s ease,opacity .2s ease;box-shadow:var(--shadow-1)}
+.nav-mobile.open{transform:translateY(0);opacity:1;pointer-events:auto}
+.nav-mobile ul{list-style:none;margin:0;padding:8px}
+.nav-mobile li{border-bottom:1px solid rgba(255,255,255,.12)}
+.nav-mobile li:last-child{border-bottom:0}
+.nav-mobile .nav-link{width:100%;padding:14px 12px;border-radius:10px}
+.nav-iconline{display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;color:#fff}
+.mobile-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:8px}
+@media(min-width:768px){.nav-desktop{display:inline-flex}.nav-toggle,.nav-mobile{display:none}}
+.nav-link,.nav-toggle,.icon-link{min-height:44px}
+
+/* ===== Hero + Cartes (Home) ===== */
+.hero{
+    border-radius:20px;padding:48px 24px;
+    background:linear-gradient(90deg,#7A5AF8,#1B04AD);
+    color:#fff;text-align:center;box-shadow:var(--shadow-1)
+}
+.hero h1{margin:0 0 8px;font-size:40px;letter-spacing:.5px}
+.hero p{margin:0 0 20px;opacity:.9}
+.btn-primary{display:inline-block;background:#fff;color:#1B04AD;font-weight:700;padding:10px 16px;border-radius:999px}
+.grid3{display:grid;gap:16px;grid-template-columns:1fr;margin:24px 0 40px}
+.card{background:#fff;border-radius:16px;box-shadow:var(--shadow-1);padding:20px}
+.card p{margin:.25rem 0 0;color:#555}
+@media(min-width:900px){.grid3{grid-template-columns:1fr 1fr 1fr}}
