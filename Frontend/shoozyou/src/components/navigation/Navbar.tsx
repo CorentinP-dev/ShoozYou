@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import Logo from "../ui/Logo";
-import CartBadge from "../ui/CartBadge";
 import { CartIcon, UserIcon } from "../ui/icons";
-import navConfig from "./navconfig.ts";
+import navConfig from "./navConfig";
+import { useCart } from "../../context/CartContext";
 
 export default function Navbar() {
+    const { count } = useCart();
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
@@ -16,7 +17,7 @@ export default function Navbar() {
 
     return (
         <header className="nav-root" role="banner">
-            <div className="container nav-bar">
+            <div className="nav-bar">
                 <NavLink to="/" className="brand" aria-label="Aller à l'accueil">
                     <Logo />
                 </NavLink>
@@ -30,13 +31,13 @@ export default function Navbar() {
                             className={({ isActive }) => "nav-link" + (isActive ? " active" : "")}
                         >
                             {item.label}
-                            {item.to === "/cart" && <CartBadge count={0} />}
                         </NavLink>
                     ))}
                 </nav>
 
-                <div className="actions-desktop">
-                    <NavLink to="/cart" className="icon-link" aria-label="Panier">
+                <div className="actions-desktop" style={{ position: "relative" }}>
+                    <NavLink to="/cart" className="icon-link" aria-label="Panier" style={{ position: "relative" }}>
+                        {count > 0 && <span className="badge-count">{count}</span>}
                         <CartIcon />
                     </NavLink>
                     <NavLink to="/login" className="icon-link" aria-label="Connexion">
@@ -54,11 +55,7 @@ export default function Navbar() {
                 </div>
             </div>
 
-            <nav
-                id="nav-mobile"
-                className={`nav-mobile ${open ? "open" : ""}`}
-                aria-label="Navigation principale (mobile)"
-            >
+            <nav id="nav-mobile" className={`nav-mobile ${open ? "open" : ""}`} aria-label="Navigation principale (mobile)">
                 <ul>
                     {navConfig.map(item => (
                         <li key={item.to}>
@@ -69,18 +66,9 @@ export default function Navbar() {
                                 onClick={() => setOpen(false)}
                             >
                                 {item.label}
-                                {item.to === "/cart" && <CartBadge count={0} />}
                             </NavLink>
                         </li>
                     ))}
-                    <li className="mobile-actions">
-                        <NavLink to="/cart" onClick={() => setOpen(false)} className="nav-iconline">
-                            <CartIcon /> <span>Panier</span>
-                        </NavLink>
-                        <NavLink to="/login" onClick={() => setOpen(false)} className="nav-iconline">
-                            <UserIcon /> <span>Connexion</span>
-                        </NavLink>
-                    </li>
                 </ul>
             </nav>
         </header>

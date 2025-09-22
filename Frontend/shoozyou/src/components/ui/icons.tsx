@@ -1,16 +1,16 @@
 import React from "react";
 
-export const CartIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M7 4h-2l-1 2m0 0 3 9h10l3-7H6M4 6h16"
-              stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx="9.5" cy="20" r="1.5" fill="#fff"/>
-        <circle cx="16.5" cy="20" r="1.5" fill="#fff"/>
+export const CartIcon = () => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6 6h14l-1.5 9h-11L6 6Z" stroke="currentColor" strokeWidth="2" />
+        <circle cx="9" cy="20" r="1.5" fill="currentColor" />
+        <circle cx="18" cy="20" r="1.5" fill="currentColor" />
     </svg>
 );
 
-export const UserIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5Z" fill="#fff"/>
+export const UserIcon = () => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
+        <path d="M4 20c2-4 6-5 8-5s6 1 8 5" stroke="currentColor" strokeWidth="2" />
     </svg>
 );

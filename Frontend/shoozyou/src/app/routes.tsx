@@ -1,14 +1,20 @@
 import React from "react";
-import Home from "../pages/Home.tsx";
-import Products from "../pages/Products.tsx";
-import Cart from "../pages/Cart.tsx";
-import Login from "../pages/Login.tsx";
+import Home from "../pages/Home";
+import Products from "../pages/Products";
+import Homme from "../pages/Homme";
+import Femme from "../pages/Femme";
+import Enfant from "../pages/Enfant";
+import Cart from "../pages/Cart";
+import Login from "../pages/Login";
 
-export type AppRoute = { path: string; label: string; element: JSX.Element };
+export type ChildRoute = { path?: string; element: JSX.Element; index?: boolean };
 
-export const routes: AppRoute[] = [
-    { path: "/", label: "Accueil", element: <Home /> },
-    { path: "/products", label: "Produits", element: <Products /> },
-    { path: "/cart", label: "Panier", element: <Cart /> },
-    { path: "/login", label: "Connexion", element: <Login /> },
+export const childRoutes: ChildRoute[] = [
+    { index: true, element: <Home /> },
+    { path: "products", element: <Products /> },
+    { path: "homme", element: <Homme /> },
+    { path: "femme", element: <Femme /> },
+    { path: "enfant", element: <Enfant /> },
+    { path: "cart", element: <Cart /> },
+    { path: "login", element: <Login /> },
 ];
