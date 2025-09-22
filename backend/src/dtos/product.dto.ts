@@ -8,14 +8,16 @@ export const createProductSchema = z.object({
   stock: z.number().int().nonnegative(),
   imageUrl: z.string().url().optional(),
   brandId: z.string().uuid().optional(),
-  categoryId: z.string().uuid().optional(),
+  genderId: z.string().uuid().optional(),
+  shoeTypeId: z.string().uuid().optional(),
   metadata: z.record(z.any()).optional()
 });
 
 export const updateProductSchema = createProductSchema.partial();
 
 export const productFilterSchema = z.object({
-  categoryId: z.string().uuid().optional(),
+  genderId: z.string().uuid().optional(),
+  shoeTypeId: z.string().uuid().optional(),
   brandId: z.string().uuid().optional(),
   minPrice: z.coerce.number().nonnegative().optional(),
   maxPrice: z.coerce.number().nonnegative().optional(),
