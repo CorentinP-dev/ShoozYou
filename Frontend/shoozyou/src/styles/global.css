@@ -630,40 +630,53 @@ button:focus-visible{
     font-weight: 800;
     cursor: pointer;
     transition: background .15s ease, transform .02s ease, box-shadow .15s ease;
-    box-shadow: 0 6px 16px rgba(55, 48, 163, .18);
+    box-shadow: 0 6px 16px rgba(67,56,202,.22);
 }
+.btn-solid:hover{ background: var(--primary-hover); box-shadow: 0 8px 22px rgba(55,48,163,.28); }
+.btn-solid:active{ transform: translateY(1px); }
+
+/* Secondaire (gris) */
+.btn{
+    background: #F3F4F6;
+    color: #111827;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+}
+.btn:hover{ background: #EDEFF2; border-color: #E6E8EF; }
+
+/* Outline primaire */
+.btn-outline{
+    background: transparent;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-weight: 800;
+}
+.btn-outline:hover{ background: rgba(67,56,202,.06); }
+
+/* Ghost danger */
+.btn-ghost-danger{
+    display: inline-flex; align-items: center; gap: 8px;
+    background: transparent;
+    color: var(--danger);
+    border: 0;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.btn-ghost-danger:hover{ background: rgba(225,29,72,.08); color: var(--danger-hover); }
 
 .btn-solid:disabled{
     opacity: .5;
     cursor: not-allowed;
 }
 
-.btn-solid:hover{
-    background: var(--primary-hover);
-    box-shadow: 0 8px 20px rgba(49, 46, 129, .28);
-}
-.btn-solid:active{ transform: translateY(1px); }
-.btn-solid:focus-visible{ outline: none; box-shadow: 0 0 0 3px rgba(55, 48, 163, .25); }
-
-.btn-ghost-danger{
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: transparent;
-    color: var(--danger);
-    border: 0;
-    border-radius: 10px;
-    padding: 8px 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background .15s ease, color .15s ease, transform .02s ease, box-shadow .15s ease;
-}
-.btn-ghost-danger:hover{
-    background: rgba(225, 29, 72, .08);
-    color: var(--danger-hover);
-}
-.btn-ghost-danger:active{ transform: translateY(1px); }
-.btn-ghost-danger:focus-visible{ outline: none; box-shadow: 0 0 0 3px rgba(225,29,72,.25); }
 
 /* =========================
    Cart Page
@@ -1192,4 +1205,34 @@ button:focus-visible{
 .status.ok{ background:#EAFBE7; color:#166534; }
 .status.warn{ background:#FEF3C7; color:#9A3412; }
 .status.danger{ background:#FEE2E2; color:#991B1B; }
+
+/* petites grilles form modal */
+.grid2{
+    display: grid;
+    grid-template-columns: 1fr 200px 200px;
+    gap: 10px;
+}
+@media (max-width: 800px){
+    .grid2{ grid-template-columns: 1fr; }
+}
+
+/* éditeur de tailles/stock */
+.sizes-editor{ display: grid; gap: 8px; margin-bottom: 8px; }
+.sizes-row{ display: flex; gap: 8px; align-items: center; }
+.sz-input{
+    width: 120px;
+    padding: 8px 10px;
+    border: 1px solid #e6e6f0;
+    border-radius: 10px;
+}
+
+.table-actions .link{
+    background: transparent; border: 0; padding: 0;
+    color: #2563EB; font-weight: 800; cursor: pointer;
+    margin-right:5px;
+    margin-left: 5px;
+}
+.table-actions .link:hover{ text-decoration: underline; }
+.table-actions .link.danger{ color: var(--danger); }
+
 
