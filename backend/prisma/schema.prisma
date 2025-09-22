@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 enum Role {
@@ -42,7 +43,7 @@ model User {
   cart   Cart?
 }
 
-model Category {
+model Brand {
   id        String    @id @default(uuid())
   name      String    @unique
   products  Product[]
@@ -50,7 +51,15 @@ model Category {
   updatedAt DateTime  @updatedAt
 }
 
-model Brand {
+model Gender {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model ProductType {
   id        String    @id @default(uuid())
   name      String    @unique
   products  Product[]
@@ -67,14 +76,16 @@ model Product {
   stock       Int           @default(0)
   imageUrl    String?
   brandId     String?
-  categoryId  String?
+  genderId    String?
+  shoeTypeId  String?
   metadata    Json?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  brand    Brand?    @relation(fields: [brandId], references: [id])
-  category Category? @relation(fields: [categoryId], references: [id])
-  cartItems CartItem[]
+  brand   Brand?       @relation(fields: [brandId], references: [id])
+  gender  Gender?      @relation(fields: [genderId], references: [id])
+  shoeType ProductType? @relation(fields: [shoeTypeId], references: [id])
+  cartItems  CartItem[]
   orderItems OrderItem[]
 }
 

@@ -6,14 +6,14 @@ import { CreateProductInput, ProductFilterInput, UpdateProductInput } from '../d
 export const createProduct = async (payload: CreateProductInput) => {
   return prisma.product.create({
     data: payload,
-    include: { brand: true, category: true }
+    include: { brand: true, gender: true, shoeType: true }
   });
 };
 
 export const getProductById = async (id: string) => {
   const product = await prisma.product.findUnique({
     where: { id },
-    include: { brand: true, category: true }
+    include: { brand: true, gender: true, shoeType: true }
   });
 
   if (!product) {
@@ -28,7 +28,7 @@ export const updateProduct = async (id: string, payload: UpdateProductInput) => 
     return await prisma.product.update({
       where: { id },
       data: payload,
-      include: { brand: true, category: true }
+      include: { brand: true, gender: true, shoeType: true }
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
@@ -50,7 +50,7 @@ export const deleteProduct = async (id: string) => {
 };
 
 export const listProducts = async (filters: ProductFilterInput) => {
-  const { page, limit, search, minPrice, maxPrice, brandId, categoryId } = filters;
+  const { page, limit, search, minPrice, maxPrice, brandId, genderId, shoeTypeId } = filters;
   const where: Prisma.ProductWhereInput = {};
 
   if (search) {
@@ -64,8 +64,12 @@ export const listProducts = async (filters: ProductFilterInput) => {
     where.brandId = brandId;
   }
 
-  if (categoryId) {
-    where.categoryId = categoryId;
+  if (genderId) {
+    where.genderId = genderId;
+  }
+
+  if (shoeTypeId) {
+    where.shoeTypeId = shoeTypeId;
   }
 
   if (minPrice !== undefined || maxPrice !== undefined) {
@@ -83,7 +87,7 @@ export const listProducts = async (filters: ProductFilterInput) => {
     prisma.product.count({ where }),
     prisma.product.findMany({
       where,
-      include: { brand: true, category: true },
+      include: { brand: true, gender: true, shoeType: true },
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { createdAt: 'desc' }
