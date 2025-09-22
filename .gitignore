@@ -1,2 +1,15 @@
 # Configuration Jetbrains
 .idea/
+# Node
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/.coverage/
+
+# Prisma
+backend/prisma/dev.db
+backend/prisma/migrations/
+
+# Logs and runtime
+backend/logs/
+*.log
