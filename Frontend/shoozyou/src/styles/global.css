@@ -490,6 +490,62 @@ button:focus-visible{
 }
 
 /* =========================
+   Product filters
+   ========================= */
+.product-filters{
+    margin: 16px 0;
+    padding: 16px;
+    background: #f5f5ff;
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.product-filters__row{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.product-filters__row .field{
+    flex: 1 1 180px;
+    min-width: 160px;
+}
+
+.product-filters__row select,
+.product-filters__row input{
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #d4d4f7;
+    font-family: inherit;
+}
+
+.product-filters__actions{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.filters-error{
+    color: #b91c1c;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px){
+    .product-filters{
+        padding: 12px;
+    }
+    .product-filters__row{
+        flex-direction: column;
+    }
+    .product-filters__row .field{
+        width: 100%;
+    }
+}
+
+/* =========================
    Modal
    ========================= */
 .modal-overlay{
@@ -1234,5 +1290,4 @@ button:focus-visible{
 }
 .table-actions .link:hover{ text-decoration: underline; }
 .table-actions .link.danger{ color: var(--danger); }
-
 

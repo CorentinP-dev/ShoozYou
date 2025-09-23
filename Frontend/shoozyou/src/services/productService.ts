@@ -28,6 +28,10 @@ export type FetchProductsOptions = {
   limit?: number;
   page?: number;
   search?: string;
+  brandId?: string;
+  shoeTypeId?: string;
+  minPrice?: number;
+  maxPrice?: number;
 };
 
 export type ProductsMeta = {
@@ -75,6 +79,22 @@ const buildQuery = async (options: FetchProductsOptions | undefined): Promise<Ad
 
   if (options?.search) {
     query.search = options.search;
+  }
+
+  if (options?.brandId) {
+    query.brandId = options.brandId;
+  }
+
+  if (options?.shoeTypeId) {
+    query.shoeTypeId = options.shoeTypeId;
+  }
+
+  if (options?.minPrice !== undefined) {
+    query.minPrice = options.minPrice;
+  }
+
+  if (options?.maxPrice !== undefined) {
+    query.maxPrice = options.maxPrice;
   }
 
   if (options?.genderSlug && options.genderSlug !== 'mixte') {

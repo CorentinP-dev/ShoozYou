@@ -1,21 +1,29 @@
-import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useProducts } from "../features/products/useProducts";
 import ProductCard from "../components/products/ProductCard";
 import Pagination from "../components/pagination/Pagination";
+import { ProductFilters } from "../components/products/ProductFilters";
+import { useProductFilterParams } from "../features/products/useProductFilterParams";
 
 const PAGE_SIZE = 20;
-function paginate<T>(arr: T[], page: number, size: number) {
-    const start = (page - 1) * size;
-    return arr.slice(start, start + size);
-}
 
 export default function Home() {
-    const { loading, list } = useProducts();
-    const [search, setSearch] = useSearchParams();
-    const page = Math.max(1, Number(search.get("page")) || 1);
+    const { filters, setFilters } = useProductFilterParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const page = Math.max(1, Number(searchParams.get("page")) || 1);
 
-    const pageItems = useMemo(() => paginate(list, page, PAGE_SIZE), [list, page]);
+    const { loading, list, meta } = useProducts({
+        limit: PAGE_SIZE,
+        page,
+        brandId: filters.brandId,
+        shoeTypeId: filters.shoeTypeId,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+    });
+
+    const currentPage = meta?.page ?? page;
+    const pageSize = meta?.limit ?? PAGE_SIZE;
+    const totalItems = meta?.total ?? list.length;
 
     return (
         <div className="container" style={{ padding: "24px 0" }}>
@@ -37,6 +45,8 @@ export default function Home() {
             <section style={{ marginTop: 28 }}>
                 <h2 style={{ margin: "0 0 12px" }}>Nouveautés</h2>
 
+                <ProductFilters value={filters} onChange={setFilters} />
+
                 {loading ? (
                     <div className="skeleton-grid">
                         {Array.from({ length: 8 }).map((_, i) => <div className="skeleton-card" key={i} />)}
@@ -44,14 +54,18 @@ export default function Home() {
                 ) : (
                     <>
                         <div className="product-grid">
-                            {pageItems.map(p => <ProductCard key={p.id} product={p} />)}
+                            {list.map(p => <ProductCard key={p.id} product={p} />)}
                         </div>
 
                         <Pagination
-                            page={page}
-                            pageSize={PAGE_SIZE}
-                            total={list.length}
-                            onPageChange={(p) => setSearch({ page: String(p) }, { replace: true })}
+                            page={currentPage}
+                            pageSize={pageSize}
+                            total={totalItems}
+                            onPageChange={(nextPage) => {
+                                const next = new URLSearchParams(searchParams);
+                                next.set("page", String(nextPage));
+                                setSearchParams(next, { replace: true });
+                            }}
                         />
                     </>
                 )}

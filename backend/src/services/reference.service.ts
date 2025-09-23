@@ -11,3 +11,9 @@ export const listShoeTypes = async () => {
     orderBy: { name: 'asc' }
   });
 };
+
+export const listBrands = async () => {
+  return prisma.brand.findMany({
+    orderBy: { name: 'asc' }
+  });
+};

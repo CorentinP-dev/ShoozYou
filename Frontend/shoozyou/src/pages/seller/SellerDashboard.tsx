@@ -1,43 +1,34 @@
 import { useEffect, useMemo, useState } from "react";
 import { RequireRole } from "../../components/routing/RequireRole";
 import { useAuth } from "../../context/AuthContext";
-import { useProducts } from "../../features/products/useProducts";
-import type { Product } from "../../services/productService";
 import { formatPrice } from "../../utils/format";
+import {
+    fetchSellerInventory,
+    type InventoryStatus,
+    type SellerInventoryProduct,
+    type SellerInventoryStats,
+} from "../../services/sellerApi";
 
 type CategoryFilter = "Toutes" | "Homme" | "Femme" | "Enfant" | "Mixte";
 type StockFilter = "Tous" | "En stock" | "Stock faible" | "Rupture";
 
-const LABELS: Record<Product["category"], CategoryFilter> = {
+const CATEGORY_LABELS: Record<SellerInventoryProduct["category"], CategoryFilter> = {
     homme: "Homme",
     femme: "Femme",
     enfant: "Enfant",
     mixte: "Mixte",
 };
 
-const computeStatus = (product: Product): StockFilter => {
-    const totalVariantes = product.variants.length;
-    if (totalVariantes === 0) {
-        return product.stock > 0 ? "En stock" : "Rupture";
-    }
+const STATUS_LABELS: Record<InventoryStatus, StockFilter> = {
+    IN_STOCK: "En stock",
+    LOW_STOCK: "Stock faible",
+    OUT_OF_STOCK: "Rupture",
+};
 
-    const stockByVariant = product.variants.map((variant) => variant.stock);
-    const allZero = stockByVariant.every((stock) => stock === 0);
-    if (allZero) {
-        return "Rupture";
-    }
-
-    const anyZero = stockByVariant.some((stock) => stock === 0);
-    if (anyZero) {
-        return "Rupture";
-    }
-
-    const anyLow = stockByVariant.some((stock) => stock > 0 && stock <= 3);
-    if (anyLow) {
-        return "Stock faible";
-    }
-
-    return "En stock";
+const STATUS_CLASS: Record<InventoryStatus, "ok" | "warn" | "danger"> = {
+    IN_STOCK: "ok",
+    LOW_STOCK: "warn",
+    OUT_OF_STOCK: "danger",
 };
 
 const PAGE_SIZE = 20;
@@ -49,33 +40,68 @@ export default function SellerDashboard() {
     const [stock, setStock] = useState<StockFilter>("Tous");
     const [page, setPage] = useState(1);
 
-    const { loading, list, error } = useProducts({ limit: 50, fetchAll: true });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [products, setProducts] = useState<SellerInventoryProduct[]>([]);
+    const [stats, setStats] = useState<SellerInventoryStats | null>(null);
 
-    const productsWithStatus = useMemo(() =>
-        list.map((product) => ({ ...product, status: computeStatus(product) })),
-    [list]);
+    useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await fetchSellerInventory();
+                if (cancelled) return;
+                setProducts(response.products);
+                setStats(response.stats);
+            } catch (err) {
+                if (cancelled) return;
+                const message = err instanceof Error ? err.message : "Impossible de récupérer l'inventaire";
+                setError(message);
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        load();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const inventoryStats = stats ?? {
+        totalProducts: 0,
+        totalStock: 0,
+        inStockProducts: 0,
+        lowStockProducts: 0,
+        outOfStockProducts: 0,
+    };
 
     const filtered = useMemo(() => {
-        return productsWithStatus
+        return products
             .filter((product) => {
                 if (!q.trim()) return true;
                 const term = q.trim().toLowerCase();
-                const categoryLabel = LABELS[product.category];
+                const categoryLabel = CATEGORY_LABELS[product.category];
                 return (
                     product.name.toLowerCase().includes(term) ||
                     product.sku.toLowerCase().includes(term) ||
                     categoryLabel.toLowerCase().includes(term)
                 );
             })
-            .filter((product) => (cat === "Toutes" ? true : LABELS[product.category] === cat))
+            .filter((product) => (cat === "Toutes" ? true : CATEGORY_LABELS[product.category] === cat))
             .filter((product) => {
                 if (stock === "Tous") return true;
-                if (stock === "Rupture") return product.status === "Rupture";
-                if (stock === "Stock faible") return product.status === "Stock faible";
-                if (stock === "En stock") return product.status === "En stock";
+                const label = STATUS_LABELS[product.status];
+                if (stock === "Rupture") return label === "Rupture";
+                if (stock === "Stock faible") return label === "Stock faible";
+                if (stock === "En stock") return label === "En stock";
                 return true;
             });
-    }, [cat, productsWithStatus, q, stock]);
+    }, [cat, products, q, stock]);
 
     useEffect(() => {
         const maxPage = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -90,23 +116,6 @@ export default function SellerDashboard() {
         [filtered, page],
     );
 
-    const stats = useMemo(() => {
-        return productsWithStatus.reduce(
-            (acc, product) => {
-                if (product.status === "Rupture") acc.ruptureProducts += 1;
-                if (product.status === "Stock faible") acc.lowStockProducts += 1;
-                if (product.status === "En stock") acc.inStockProducts += 1;
-
-                product.variants.forEach((variant) => {
-                    acc.totalStock += variant.stock;
-                });
-
-                return acc;
-            },
-            { inStockProducts: 0, lowStockProducts: 0, ruptureProducts: 0, totalStock: 0, orders: 0 }
-        );
-    }, [productsWithStatus]);
-
     const handlePrev = () => setPage((prev) => Math.max(1, prev - 1));
     const handleNext = () => setPage((prev) => Math.min(totalPages, prev + 1));
 
@@ -118,23 +127,23 @@ export default function SellerDashboard() {
                 <div className="stats-grid">
                     <div className="stat-card">
                         <div className="stat-title">Stock total</div>
-                        <div className="stat-value ok">{stats.totalStock}</div>
+                        <div className="stat-value ok">{inventoryStats.totalStock}</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-title">Produits en stock</div>
-                        <div className="stat-value ok">{stats.inStockProducts}</div>
+                        <div className="stat-value ok">{inventoryStats.inStockProducts}</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-title">Stock faible</div>
-                        <div className="stat-value warn">{stats.lowStockProducts}</div>
+                        <div className="stat-value warn">{inventoryStats.lowStockProducts}</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-title">Ruptures</div>
-                        <div className="stat-value danger">{stats.ruptureProducts}</div>
+                        <div className="stat-value danger">{inventoryStats.outOfStockProducts}</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-title">Commandes</div>
-                        <div className="stat-value">{stats.orders}</div>
+                        <div className="stat-value">0</div>
                     </div>
                 </div>
 
@@ -197,14 +206,13 @@ export default function SellerDashboard() {
                                 <tr><td colSpan={5} style={{ textAlign: "center", padding: 24 }}>Chargement…</td></tr>
                             ) : error ? (
                                 <tr><td colSpan={5} style={{ textAlign: "center", padding: 24, color: '#dc2626' }}>
-                                    {error instanceof Error ? error.message : 'Impossible de récupérer les produits'}
+                                    {error}
                                 </td></tr>
                             ) : pageItems.length > 0 ? (
                                 pageItems.map((product) => {
-                                    const status = computeStatus(product);
                                     const variants = product.variants.length
                                         ? product.variants
-                                        : [{ id: `${product.id}-fallback`, sizeValue: 'N/A', sizeLabel: 'N/A', stock: product.stock }];
+                                        : [{ id: `${product.id}-unique`, sizeValue: 'unique', sizeLabel: 'Unique', stock: product.totalStock }];
                                     return (
                                         <tr key={product.id}>
                                             <td>
@@ -213,7 +221,7 @@ export default function SellerDashboard() {
                                                     <span>{product.name}</span>
                                                 </div>
                                             </td>
-                                            <td>{LABELS[product.category]}</td>
+                                            <td>{CATEGORY_LABELS[product.category]}</td>
                                             <td>{formatPrice(product.price)}</td>
                                             <td>
                                                 <div className="sizes-line">
@@ -225,8 +233,8 @@ export default function SellerDashboard() {
                                                                 (variant.stock === 0
                                                                     ? "chip-out"
                                                                     : variant.stock <= 3
-                                                                    ? "chip-low"
-                                                                    : "chip-ok")
+                                                                        ? "chip-low"
+                                                                        : "chip-ok")
                                                             }
                                                             title={`Taille ${variant.sizeLabel} — stock : ${variant.stock}`}
                                                         >
@@ -236,10 +244,8 @@ export default function SellerDashboard() {
                                                 </div>
                                             </td>
                                             <td>
-                          <span className={
-                              "status " + (status === "Rupture" ? "danger" : status === "Stock faible" ? "warn" : "ok")
-                          }>
-                            {status}
+                          <span className={`status ${STATUS_CLASS[product.status]}`}>
+                            {STATUS_LABELS[product.status]}
                           </span>
                                             </td>
                                         </tr>

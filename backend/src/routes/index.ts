@@ -5,6 +5,7 @@ import { userRouter } from './user.routes';
 import { cartRouter } from './cart.routes';
 import { orderRouter } from './order.routes';
 import { referenceRouter } from './reference.routes';
+import { sellerRouter } from './seller.routes';
 
 export const apiRouter = Router();
 
@@ -14,3 +15,4 @@ apiRouter.use('/users', userRouter);
 apiRouter.use('/cart', cartRouter);
 apiRouter.use('/orders', orderRouter);
 apiRouter.use('/references', referenceRouter);
+apiRouter.use('/seller', sellerRouter);

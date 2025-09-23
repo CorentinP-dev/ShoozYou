@@ -1,23 +1,28 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useProducts } from "../features/products/useProducts";
 import ProductCard from "../components/products/ProductCard";
 import Pagination from "../components/pagination/Pagination";
 import ProductModal from "../components/products/ProductModal";
 import type { Product } from "../services/productService";
+import { ProductFilters } from "../components/products/ProductFilters";
+import { useProductFilterParams } from "../features/products/useProductFilterParams";
 
 const PAGE_SIZE = 20;
-function paginate<T>(arr: T[], page: number, size: number) {
-    const start = (page - 1) * size;
-    return arr.slice(start, start + size);
-}
 
 export default function Home() {
-    const { loading, list } = useProducts({ limit: 120 });
+    const { filters, setFilters } = useProductFilterParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const page = Math.max(1, Number(searchParams.get("page")) || 1);
 
-    // pagination via ?page=
-    const [search, setSearch] = useSearchParams();
-    const page = Math.max(1, Number(search.get("page")) || 1);
+    const { loading, list, meta } = useProducts({
+        limit: PAGE_SIZE,
+        page,
+        brandId: filters.brandId,
+        shoeTypeId: filters.shoeTypeId,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+    });
 
     // --- Quick View modal ---
     const [selected, setSelected] = useState<Product | null>(null);
@@ -27,7 +32,9 @@ export default function Home() {
         setOpen(true);
     };
 
-    const pageItems = useMemo(() => paginate(list, page, PAGE_SIZE), [list, page]);
+    const currentPage = meta?.page ?? page;
+    const pageSize = meta?.limit ?? PAGE_SIZE;
+    const totalItems = meta?.total ?? list.length;
 
     return (
         <>
@@ -65,6 +72,8 @@ export default function Home() {
             <section className="section">
                 <h2 style={{ margin: "0 0 12px" }}> Produits </h2>
 
+                <ProductFilters value={filters} onChange={setFilters} />
+
                 {loading ? (
                     <div className="skeleton-grid">
                         {Array.from({ length: 12 }).map((_, i) => (
@@ -74,16 +83,20 @@ export default function Home() {
                 ) : (
                     <>
                         <div className="product-grid">
-                            {pageItems.map((p) => (
+                            {list.map((p) => (
                                 <ProductCard key={p.id} product={p} onClick={() => openModal(p)} />
                             ))}
                         </div>
 
                         <Pagination
-                            page={page}
-                            pageSize={PAGE_SIZE}
-                            total={list.length}
-                            onPageChange={(p) => setSearch({ page: String(p) }, { replace: true })}
+                            page={currentPage}
+                            pageSize={pageSize}
+                            total={totalItems}
+                            onPageChange={(nextPage) => {
+                                const next = new URLSearchParams(searchParams);
+                                next.set("page", String(nextPage));
+                                setSearchParams(next, { replace: true });
+                            }}
                         />
                     </>
                 )}
