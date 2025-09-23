@@ -4,13 +4,16 @@ import {
     login as svcLogin,
     logout as svcLogout,
     refreshSession,
-    type AuthUser
+    register as svcRegister,
+    type AuthUser,
+    type RegisterPayload
 } from "../services/authService";
 
 type AuthContextType = {
     user: AuthUser | null;
     loading: boolean;
     login: (email: string, password: string) => Promise<void>;
+    register: (payload: RegisterPayload) => Promise<void>;
     logout: () => void;
     refresh: () => Promise<void>;
 };
@@ -46,6 +49,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session);
     }, []);
 
+    const register = useCallback(async (payload: RegisterPayload) => {
+        const session = await svcRegister(payload);
+        setUser(session);
+    }, []);
+
     const logout = useCallback(() => {
         svcLogout();
         setUser(null);
@@ -57,8 +65,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const value = useMemo(
-        () => ({ user, loading, login, logout, refresh }),
-        [user, loading, login, logout, refresh]
+        () => ({ user, loading, login, register, logout, refresh }),
+        [user, loading, login, register, logout, refresh]
     );
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -88,6 +88,7 @@ Adapter avec l’URL Railway en production.
 ## Frontend
 - **Tech stack** : React 19, Vite, TypeScript, Context API (auth/cart), React Router.
 - **Pages clés** :
+  - Inscription (création de compte client) & connexion.
   - Catalogue + filtres avancés (recherche, marque, type, prix).
   - Espace client (profil, commandes).
   - Espace vendeur (inventaire + métriques commandes/revenus).

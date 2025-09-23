@@ -12,6 +12,13 @@ export type AuthUser = {
     expiresAt?: number;
 };
 
+export type RegisterPayload = {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+};
+
 const STORAGE_KEY = 'auth-user-v2';
 
 const mapRole = (role: string): Role => {
@@ -62,6 +69,29 @@ export async function login(email: string, password: string): Promise<AuthUser> 
     const response = await httpRequest<{ user: any; token: string }>('/auth/login', {
         method: 'POST',
         body: { email, password },
+        authenticated: false,
+    });
+
+    const { user, token } = response;
+    const { exp } = decodeToken(token);
+    const session: AuthUser = {
+        id: user.id,
+        email: user.email,
+        name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email,
+        role: mapRole(user.role),
+        active: Boolean(user.active),
+        token,
+        expiresAt: exp,
+    };
+
+    saveSession(session);
+    return session;
+}
+
+export async function register(payload: RegisterPayload): Promise<AuthUser> {
+    const response = await httpRequest<{ user: any; token: string }>('/auth/register', {
+        method: 'POST',
+        body: payload,
         authenticated: false,
     });
 

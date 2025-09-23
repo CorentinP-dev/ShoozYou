@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
@@ -65,6 +65,10 @@ export default function Login() {
                 <button className="btn-solid" type="submit" disabled={submitting}>
                     {submitting ? "Connexion..." : "Se connecter"}
                 </button>
+
+                <p className="muted" style={{ marginTop: 16 }}>
+                    Pas encore de compte ? <Link to="/register">Créer un compte</Link>
+                </p>
             </form>
         </div>
     );
