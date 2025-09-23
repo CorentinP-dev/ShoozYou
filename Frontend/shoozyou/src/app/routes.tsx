@@ -10,6 +10,7 @@ import CookiesPolicy from "../pages/Cookies";
 import SellerDashboard from "../pages/seller/SellerDashboard";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import { RequireRole } from "../components/routing/RequireRole";
+import ClientAccount from "../pages/account/ClientAccount";
 
 export type ChildRoute = { path?: string; element: ReactElement; index?: boolean };
 
@@ -23,6 +24,7 @@ export const childRoutes: ChildRoute[] = [
     { path: "login", element: <Login /> },
     { path: "seller", element: <RequireRole roles={["seller", "admin"]}><SellerDashboard /></RequireRole> },
     { path: "admin", element: <RequireRole roles={["admin"]}><AdminDashboard /></RequireRole> },
+    { path: "account", element: <RequireRole roles={["client", "seller", "admin"]}><ClientAccount /></RequireRole> },
     { path: "privacy", element: <Privacy /> },
     { path: "cookies", element: <CookiesPolicy /> },
 ];

@@ -5,6 +5,7 @@ const roleValues = ['CLIENT', 'SELLER', 'ADMIN'] as const;
 export const updateProfileSchema = z.object({
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
+  email: z.string().email().optional(),
   password: z.string().min(8).optional()
 });
 

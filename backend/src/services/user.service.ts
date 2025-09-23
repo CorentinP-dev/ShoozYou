@@ -16,7 +16,8 @@ const userSelect = {
   lastName: true,
   role: true,
   active: true,
-  createdAt: true
+  createdAt: true,
+  updatedAt: true
 } satisfies Prisma.UserSelect;
 
 export const getUserById = async (userId: string) => {
@@ -49,17 +50,24 @@ export const updateUserProfile = async (userId: string, payload: UpdateProfileIn
 
   if (payload.firstName) data.firstName = payload.firstName;
   if (payload.lastName) data.lastName = payload.lastName;
+  if (payload.email) data.email = payload.email;
   if (payload.password) data.password = await hashPassword(payload.password);
 
   if (Object.keys(data).length === 0) {
     return getUserById(userId);
   }
-
-  return prisma.user.update({
-    where: { id: userId },
-    data,
-    select: userSelect
-  });
+  try {
+    return await prisma.user.update({
+      where: { id: userId },
+      data,
+      select: userSelect
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw new HttpError(409, 'Email already in use');
+    }
+    throw error;
+  }
 };
 
 export const updateUserRole = async (userId: string, payload: UpdateUserRoleInput) => {

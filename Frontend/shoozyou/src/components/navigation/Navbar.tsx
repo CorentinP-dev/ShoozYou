@@ -52,6 +52,11 @@ export default function Navbar() {
                     <NavLink to="/femme" className={active}>Femme</NavLink>
                     <NavLink to="/enfant" className={active}>Enfant</NavLink>
 
+                    {/* Liens authentifiés */}
+                    {user && (
+                        <NavLink to="/account" className={active}>Mon compte</NavLink>
+                    )}
+
                     {/* Liens de rôle */}
                     {user?.role === "seller" && (
                         <NavLink to="/seller" className={active}>Espace vendeur</NavLink>
@@ -76,9 +81,9 @@ export default function Navbar() {
 
                     {user ? (
                         <>
-              <span title={user.email} className="icon-link" style={{ paddingInline: 8 }}>
-                {user.name}
-              </span>
+                            <NavLink to="/account" className="icon-link" title="Mon compte">
+                                <UserIcon />
+                            </NavLink>
                             <button className="icon-link" title="Se déconnecter" onClick={logout} aria-label="Se déconnecter">
                                 <LogoutIcon />
                             </button>
@@ -111,6 +116,10 @@ export default function Navbar() {
                     <li><NavLink to="/femme" className={active}>Femme</NavLink></li>
                     <li><NavLink to="/enfant" className={active}>Enfant</NavLink></li>
 
+                    {user && (
+                        <li><NavLink to="/account" className={active}>Mon compte</NavLink></li>
+                    )}
+
                     {user?.role === "seller" && (
                         <li><NavLink to="/seller" className={active}>Espace vendeur</NavLink></li>
                     )}
@@ -127,7 +136,10 @@ export default function Navbar() {
 
                     <li className="mobile-actions">
                         {user ? (
-                            <button className="btn-solid" onClick={logout}>Se déconnecter</button>
+                            <>
+                                <NavLink className="btn" to="/account">Mon compte</NavLink>
+                                <button className="btn-solid" onClick={logout}>Se déconnecter</button>
+                            </>
                         ) : (
                             <NavLink className="btn-solid" to="/login">Se connecter</NavLink>
                         )}

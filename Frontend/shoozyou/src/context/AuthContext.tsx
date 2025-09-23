@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import {
     getStoredSession,
     login as svcLogin,
@@ -12,6 +12,7 @@ type AuthContextType = {
     loading: boolean;
     login: (email: string, password: string) => Promise<void>;
     logout: () => void;
+    refresh: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -40,17 +41,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
     }, []);
 
-    const login = async (email: string, password: string) => {
+    const login = useCallback(async (email: string, password: string) => {
         const session = await svcLogin(email, password);
         setUser(session);
-    };
+    }, []);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         svcLogout();
         setUser(null);
-    };
+    }, []);
 
-    const value = useMemo(() => ({ user, loading, login, logout }), [user, loading]);
+    const refresh = useCallback(async () => {
+        const session = await refreshSession();
+        setUser(session);
+    }, []);
+
+    const value = useMemo(
+        () => ({ user, loading, login, logout, refresh }),
+        [user, loading, login, logout, refresh]
+    );
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
