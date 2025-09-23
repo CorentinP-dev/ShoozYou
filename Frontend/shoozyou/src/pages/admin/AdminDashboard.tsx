@@ -18,6 +18,10 @@ export default function AdminDashboard() {
     const [items, setItems] = useState<AdminProductDto[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const [limit] = useState(20);
+    const [total, setTotal] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
 
     const [openForm, setOpenForm] = useState(false);
     const [editing, setEditing] = useState<AdminProductDto | null>(null);
@@ -42,9 +46,11 @@ export default function AdminDashboard() {
         const loadProducts = async () => {
             try {
                 setLoading(true);
-                const result = await fetchAdminProducts({ limit: 100 });
+                const result = await fetchAdminProducts({ limit, page, search: q || undefined });
                 if (!cancelled) {
                     setItems(result.items);
+                    setTotal(result.meta.total);
+                    setTotalPages(result.meta.pages ?? Math.max(1, Math.ceil(result.meta.total / limit)));
                     setError(null);
                 }
             } catch (err) {
@@ -63,7 +69,7 @@ export default function AdminDashboard() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [limit, page, q]);
 
     useEffect(() => {
         let cancelled = false;
@@ -94,32 +100,42 @@ export default function AdminDashboard() {
         };
     }, []);
 
-    const filtered = useMemo(() => {
-        if (!q.trim()) return items;
-        const t = q.toLowerCase();
-        return items.filter((p) => {
-            const category = [genderMap.get(p.genderId ?? ""), shoeTypeMap.get(p.shoeTypeId ?? "")]
-                .filter(Boolean)
-                .join(" · ");
-            return (
-                p.name.toLowerCase().includes(t) ||
-                p.sku.toLowerCase().includes(t) ||
-                p.description.toLowerCase().includes(t) ||
-                category.toLowerCase().includes(t)
-            );
-        });
-    }, [items, q, genderMap, shoeTypeMap]);
-
     const computeStockTotal = (product: AdminProductDto) =>
         product.variants.reduce((total, variant) => total + variant.stock, 0);
 
     const stats = useMemo(() => {
-        const totalProducts = items.length;
+        const totalProducts = total;
         const totalStock = items.reduce((sum, product) => sum + computeStockTotal(product), 0);
         const orders = 0; // TODO: brancher lorsque l'API commandes sera prête
         const revenue = 0;
         return { totalProducts, orders, revenue, totalStock };
-    }, [items]);
+    }, [items, total]);
+
+    const pageRange = useMemo(() => {
+        const maxButtons = 7;
+        if (totalPages <= maxButtons) {
+            return Array.from({ length: totalPages }, (_, idx) => idx + 1);
+        }
+
+        const range: Array<number | 'ellipsis'> = [1];
+        const start = Math.max(2, page - 1);
+        const end = Math.min(totalPages - 1, page + 1);
+
+        if (start > 2) {
+            range.push('ellipsis');
+        }
+
+        for (let index = start; index <= end; index += 1) {
+            range.push(index);
+        }
+
+        if (end < totalPages - 1) {
+            range.push('ellipsis');
+        }
+
+        range.push(totalPages);
+        return range;
+    }, [page, totalPages]);
 
     const displayCategory = (product: AdminProductDto) => {
         const genderName = genderMap.get(product.genderId ?? "");
@@ -134,6 +150,11 @@ export default function AdminDashboard() {
             const created = await createAdminProduct(data);
             setItems(prev => [created, ...prev]);
             setOpenForm(false);
+            setTotal(prev => {
+                const next = prev + 1;
+                setTotalPages(Math.max(1, Math.ceil(next / limit)));
+                return next;
+            });
         } catch (err) {
             const message = err instanceof Error ? err.message : "Création impossible";
             setFormError(message);
@@ -166,6 +187,14 @@ export default function AdminDashboard() {
             await deleteAdminProduct(confirm.id);
             setItems(prev => prev.filter(p => p.id !== confirm.id));
             setConfirm({ open: false });
+            setTotal(prev => {
+                const next = Math.max(0, prev - 1);
+                setTotalPages(Math.max(1, Math.ceil(next / limit)));
+                if (page > 1 && page > Math.ceil(next / limit)) {
+                    setPage(Math.max(1, Math.ceil(next / limit)));
+                }
+                return next;
+            });
         } catch (err) {
             const message = err instanceof Error ? err.message : "Suppression impossible";
             alert(message);
@@ -212,7 +241,10 @@ export default function AdminDashboard() {
                 {/* Toolbar */}
                 <div className="admin-toolbar">
                     <input className="tool-input" placeholder="Rechercher un produit…" value={q}
-                           onChange={e => setQ(e.target.value)}/>
+                           onChange={e => {
+                               setPage(1);
+                               setQ(e.target.value);
+                           }}/>
                 </div>
 
                 {/* Table */}
@@ -245,7 +277,7 @@ export default function AdminDashboard() {
                                     <td colSpan={5} style={{ textAlign: "center", padding: 20 }}>Chargement…</td>
                                 </tr>
                             )}
-                            {!loading && filtered.map(p => (
+                            {!loading && items.map(p => (
                                 <tr key={p.id}>
                                     <td>
                                         <div className="row-avatar">
@@ -275,7 +307,7 @@ export default function AdminDashboard() {
                                     </td>
                                 </tr>
                             ))}
-                            {!loading && filtered.length === 0 && (
+                            {!loading && items.length === 0 && (
                                 <tr>
                                     <td colSpan={5} style={{textAlign: "center", padding: 20, color: "#777"}}>
                                         Aucun produit ne correspond à la recherche.
@@ -284,6 +316,40 @@ export default function AdminDashboard() {
                             )}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16}}>
+                    <div>Page {page} / {totalPages}</div>
+                    <div className="pagination">
+                        <button
+                            className="btn"
+                            disabled={page <= 1 || loading}
+                            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                        >
+                            Précédent
+                        </button>
+                        {pageRange.map((entry, index) => (
+                            typeof entry === 'number' ? (
+                                <button
+                                    key={entry}
+                                    className={"btn" + (entry === page ? " btn-solid" : "")}
+                                    disabled={loading}
+                                    onClick={() => setPage(entry)}
+                                >
+                                    {entry}
+                                </button>
+                            ) : (
+                                <span key={`ellipsis-${index}`} className="pagination-ellipsis">…</span>
+                            )
+                        ))}
+                        <button
+                            className="btn"
+                            disabled={page >= totalPages || loading}
+                            onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                        >
+                            Suivant
+                        </button>
                     </div>
                 </div>
             </div>

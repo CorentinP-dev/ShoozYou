@@ -26,6 +26,20 @@ export type Product = {
 export type FetchProductsOptions = {
   genderSlug?: Category;
   limit?: number;
+  page?: number;
+  search?: string;
+};
+
+export type ProductsMeta = {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+};
+
+export type ProductsResult = {
+  items: Product[];
+  meta: ProductsMeta;
 };
 
 let gendersCache: { id: string; slug: Category; name: string }[] | null = null;
@@ -53,10 +67,15 @@ const ensureGenders = async () => {
   return gendersCache;
 };
 
-const buildQuery = async (options: FetchProductsOptions | undefined) => {
-  const query: Record<string, unknown> = {
+const buildQuery = async (options: FetchProductsOptions | undefined): Promise<AdminProductFilter> => {
+  const query: AdminProductFilter = {
     limit: options?.limit ?? 60,
+    page: options?.page ?? 1,
   };
+
+  if (options?.search) {
+    query.search = options.search;
+  }
 
   if (options?.genderSlug && options.genderSlug !== 'mixte') {
     const genders = await ensureGenders();
@@ -69,13 +88,13 @@ const buildQuery = async (options: FetchProductsOptions | undefined) => {
   return query;
 };
 
-export async function fetchAllProducts(options?: FetchProductsOptions): Promise<Product[]> {
+export async function fetchProducts(options?: FetchProductsOptions): Promise<ProductsResult> {
   const [genders, query] = await Promise.all([ensureGenders(), buildQuery(options)]);
-  const response = await fetchAdminProducts(query as AdminProductFilter);
+  const response = await fetchAdminProducts(query);
 
   const genderMap = new Map(genders.map((g) => [g.id, g]));
 
-  return response.items.map((item) => {
+  const items = response.items.map((item) => {
     const genderMatch = item.genderId ? genderMap.get(item.genderId) : undefined;
     const category = genderMatch?.slug ?? 'mixte';
     return {
@@ -97,4 +116,14 @@ export async function fetchAllProducts(options?: FetchProductsOptions): Promise<
       })),
     } satisfies Product;
   });
+
+  return {
+    items,
+    meta: {
+      total: response.meta.total,
+      page: response.meta.page,
+      limit: response.meta.limit,
+      pages: response.meta.pages,
+    },
+  };
 }
