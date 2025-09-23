@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
+import CartBadge from "../ui/cartbadge";
 
 /* Icônes */
 const CartIcon: React.FC = () => (
@@ -27,13 +28,15 @@ const LogoutIcon: React.FC = () => (
 
 export default function Navbar() {
     const { user, logout } = useAuth();
-    const cartState = (useCart() as any)?.state || {};
-    const items: any[] = cartState.items || [];
-    const cartCount = items.reduce((n, it) => n + (it.qty ?? it.quantity ?? 0), 0);
+    const { count } = useCart();
+    const cartCount = count;
+    const firstName = (user?.name || "").split(" ")[0] || user?.email?.split("@")[0] || "";
 
     const [open, setOpen] = useState(false);
     const active = ({ isActive }: { isActive: boolean }) =>
         "nav-link" + (isActive ? " active" : "");
+    const accountActive = ({ isActive }: { isActive: boolean }) =>
+        "user-pill" + (isActive ? " active" : "");
     const closeMobile = () => setOpen(false);
 
     return (
@@ -52,11 +55,6 @@ export default function Navbar() {
                     <NavLink to="/femme" className={active}>Femme</NavLink>
                     <NavLink to="/enfant" className={active}>Enfant</NavLink>
 
-                    {/* Liens authentifiés */}
-                    {user && (
-                        <NavLink to="/account" className={active}>Mon compte</NavLink>
-                    )}
-
                     {/* Liens de rôle */}
                     {user?.role === "seller" && (
                         <NavLink to="/seller" className={active}>Espace vendeur</NavLink>
@@ -69,22 +67,19 @@ export default function Navbar() {
                 {/* Actions droite */}
                 <div className="actions-desktop">
                     <Link to="/cart" className="icon-link" aria-label="Voir le panier">
-            <span style={{ position: "relative" }}>
-              <CartIcon />
-                {cartCount > 0 && (
-                    <span className="badge-count" aria-label={`${cartCount} article(s) dans le panier`}>
-                  {cartCount}
-                </span>
-                )}
-            </span>
+                        <span style={{ position: "relative" }}>
+                            <CartIcon />
+                            <CartBadge count={cartCount} />
+                        </span>
                     </Link>
 
                     {user ? (
                         <>
-                            <NavLink to="/account" className="icon-link" title="Mon compte">
+                            <NavLink to="/account" className={accountActive} title="Mon compte">
                                 <UserIcon />
+                                <span>{firstName || "Mon compte"}</span>
                             </NavLink>
-                            <button className="icon-link" title="Se déconnecter" onClick={logout} aria-label="Se déconnecter">
+                            <button className="btn-logout" onClick={logout} aria-label="Se déconnecter">
                                 <LogoutIcon />
                             </button>
                         </>
@@ -116,10 +111,6 @@ export default function Navbar() {
                     <li><NavLink to="/femme" className={active}>Femme</NavLink></li>
                     <li><NavLink to="/enfant" className={active}>Enfant</NavLink></li>
 
-                    {user && (
-                        <li><NavLink to="/account" className={active}>Mon compte</NavLink></li>
-                    )}
-
                     {user?.role === "seller" && (
                         <li><NavLink to="/seller" className={active}>Espace vendeur</NavLink></li>
                     )}
@@ -127,19 +118,28 @@ export default function Navbar() {
                         <li><NavLink to="/admin" className={active}>Espace admin</NavLink></li>
                     )}
 
+                    {user && (
+                        <li className="mobile-user">
+                            <NavLink to="/account" className={accountActive}>
+                                <UserIcon />
+                                <span>{firstName || "Mon compte"}</span>
+                            </NavLink>
+                        </li>
+                    )}
+
                     <li className="nav-iconline">
                         <Link to="/cart" className="nav-link">
-                            <CartIcon /> Panier
-                            {cartCount > 0 && <span className="badge-count">{cartCount}</span>}
+                            <span className="nav-cart-link">
+                                <CartIcon />
+                                <span>Panier</span>
+                                <CartBadge count={cartCount} />
+                            </span>
                         </Link>
                     </li>
 
                     <li className="mobile-actions">
                         {user ? (
-                            <>
-                                <NavLink className="btn" to="/account">Mon compte</NavLink>
-                                <button className="btn-solid" onClick={logout}>Se déconnecter</button>
-                            </>
+                            <button className="btn-solid" onClick={logout}>Se déconnecter</button>
                         ) : (
                             <NavLink className="btn-solid" to="/login">Se connecter</NavLink>
                         )}

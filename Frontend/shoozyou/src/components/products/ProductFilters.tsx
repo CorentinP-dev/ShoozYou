@@ -6,6 +6,7 @@ export type ProductFilterValue = {
   shoeTypeId?: string;
   minPrice?: number;
   maxPrice?: number;
+  search?: string;
 };
 
 type Props = {
@@ -17,8 +18,14 @@ export const ProductFilters: React.FC<Props> = ({ value, onChange }) => {
   const { brands, shoeTypes, loading, error } = useFilterOptions();
 
   const hasActiveFilters = useMemo(() => {
-    return Boolean(value.brandId || value.shoeTypeId || value.minPrice !== undefined || value.maxPrice !== undefined);
-  }, [value.brandId, value.shoeTypeId, value.minPrice, value.maxPrice]);
+    return Boolean(
+      value.brandId ||
+        value.shoeTypeId ||
+        value.minPrice !== undefined ||
+        value.maxPrice !== undefined ||
+        (value.search && value.search.trim().length > 0)
+    );
+  }, [value.brandId, value.shoeTypeId, value.minPrice, value.maxPrice, value.search]);
 
   const update = (patch: Partial<ProductFilterValue>) => {
     onChange({ ...value, ...patch });
@@ -30,7 +37,19 @@ export const ProductFilters: React.FC<Props> = ({ value, onChange }) => {
 
   return (
     <section className="product-filters" aria-label="Filtres produits">
-      <div className="product-filters__row">
+      <div className="product-filters__row product-filters__row--search">
+        <label className="field">
+          <span>Rechercher</span>
+          <input
+            type="search"
+            placeholder="Nom, description..."
+            value={value.search ?? ""}
+            onChange={(event) => update({ search: event.target.value.length ? event.target.value : undefined })}
+          />
+        </label>
+      </div>
+
+      <div className="product-filters__row product-filters__row--controls">
         <label className="field">
           <span>Marque</span>
           <select

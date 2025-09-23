@@ -19,6 +19,7 @@ export default function Home() {
         shoeTypeId: filters.shoeTypeId,
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
+        search: filters.search,
     });
 
     const currentPage = meta?.page ?? page;

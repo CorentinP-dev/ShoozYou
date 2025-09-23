@@ -23,6 +23,7 @@ export default function Homme() {
         shoeTypeId: filters.shoeTypeId,
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
+        search: filters.search,
     });
 
     // Quick view

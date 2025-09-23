@@ -23,6 +23,7 @@ export default function Enfant() {
         shoeTypeId: filters.shoeTypeId,
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
+        search: filters.search,
     });
 
     const [selected, setSelected] = useState<Product | null>(null);

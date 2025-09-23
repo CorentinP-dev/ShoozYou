@@ -17,6 +17,7 @@ export const useProductFilterParams = () => {
       shoeTypeId: params.get("type") || undefined,
       minPrice: parseNumberParam(params.get("minPrice")),
       maxPrice: parseNumberParam(params.get("maxPrice")),
+      search: params.get("search") || undefined,
     };
   }, [params]);
 
@@ -36,6 +37,7 @@ export const useProductFilterParams = () => {
       applyParam("type", next.shoeTypeId);
       applyParam("minPrice", next.minPrice !== undefined ? String(next.minPrice) : undefined);
       applyParam("maxPrice", next.maxPrice !== undefined ? String(next.maxPrice) : undefined);
+      applyParam("search", next.search && next.search.trim().length ? next.search : undefined);
 
       // reset pagination when filters change
       updated.delete("page");

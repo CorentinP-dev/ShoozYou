@@ -22,6 +22,7 @@ export default function Home() {
         shoeTypeId: filters.shoeTypeId,
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
+        search: filters.search,
     });
 
     // --- Quick View modal ---
