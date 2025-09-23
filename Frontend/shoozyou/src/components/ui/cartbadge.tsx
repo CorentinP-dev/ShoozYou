@@ -1,4 +1,3 @@
-import React from "react";
 
 type CartBadgeProps = { count?: number };
 const CartBadge: React.FC<CartBadgeProps> = ({ count = 0 }) => (

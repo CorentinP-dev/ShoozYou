@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Modal from "../ui/Modal";
 import type { Product } from "../../services/productService";
 import { useCart } from "../../context/CartContext.tsx";
@@ -10,32 +10,63 @@ type Props = {
     onClose: () => void;
 };
 
-const sizesForCategory = (cat: Product["category"]) => {
+const fallbackSizesForCategory = (cat: Product["category"]) => {
     switch (cat) {
         case "homme":
-            return [40, 41, 42, 43, 44, 45, 46];
+            return ['40', '41', '42', '43', '44', '45', '46'];
         case "femme":
-            return [36, 37, 38, 39, 40, 41];
+            return ['36', '37', '38', '39', '40', '41'];
         case "enfant":
-            return [27, 28, 29, 30, 31, 32, 33, 34];
+            return ['27', '28', '29', '30', '31', '32', '33', '34'];
         default:
-            return [36, 37, 38, 39, 40, 41, 42, 43];
+            return ['36', '37', '38', '39', '40', '41', '42', '43'];
     }
+};
+
+const categoryLabels: Record<Product["category"], string> = {
+    homme: "Homme",
+    femme: "Femme",
+    enfant: "Enfant",
+    mixte: "Mixte",
 };
 
 export default function ProductModal({ open, product, onClose }: Props) {
     const { add } = useCart();
-    const [size, setSize] = useState<number | null>(null);
+    const [size, setSize] = useState<string | null>(null);
     const [qty, setQty] = useState(1);
 
-    // reset à l'ouverture
-    React.useEffect(() => { if (open) { setQty(1); setSize(null); } }, [open]);
+    useEffect(() => {
+        if (open) {
+            setQty(1);
+            setSize(null);
+        }
+    }, [open]);
 
-    const sizes = useMemo(() => product ? sizesForCategory(product.category) : [], [product]);
+    const sizeOptions = useMemo(() => {
+        if (!product) return [];
+        if (product.variants.length) {
+            return product.variants.map(variant => ({
+                id: variant.id,
+                value: variant.sizeValue,
+                label: variant.sizeLabel,
+                stock: variant.stock,
+            }));
+        }
+        return fallbackSizesForCategory(product.category).map(value => ({
+            id: value,
+            value,
+            label: `${value} EU`,
+            stock: product.stock,
+        }));
+    }, [product]);
 
     if (!product) return null;
 
+    const selectedInfo = size ? sizeOptions.find(item => item.value === size) : undefined;
+    const isAddDisabled = (sizeOptions.length > 0 && size === null) || (selectedInfo && selectedInfo.stock === 0);
+
     const handleAdd = () => {
+        if (isAddDisabled) return;
         add({
             id: product.id,
             name: product.name,
@@ -63,14 +94,15 @@ export default function ProductModal({ open, product, onClose }: Props) {
                     <div className="pmodal-block">
                         <div className="pmodal-label">Taille</div>
                         <div className="size-grid">
-                            {sizes.map(s => (
+                            {sizeOptions.map(option => (
                                 <button
-                                    key={s}
-                                    className={"size-btn" + (s === size ? " selected" : "")}
-                                    onClick={() => setSize(s)}
+                                    key={option.id}
+                                    type="button"
+                                    className={`size-btn${option.value === size ? " selected" : ""}${option.stock === 0 ? " disabled" : ""}`}
+                                    onClick={() => option.stock > 0 && setSize(option.value)}
                                 >
-                                    <span className="size-top">{s}</span>
-                                    <span className="size-bottom">stock</span>
+                                    <span className="size-top">{option.label}</span>
+                                    <span className="size-bottom">{option.stock > 0 ? `${option.stock} en stock` : "Rupture"}</span>
                                 </button>
                             ))}
                         </div>
@@ -90,7 +122,7 @@ export default function ProductModal({ open, product, onClose }: Props) {
 
                     <button
                         className="btn-solid"
-                        disabled={sizes.length > 0 && size === null}
+                        disabled={isAddDisabled}
                         onClick={handleAdd}
                     >
                         Ajouter au panier
@@ -100,9 +132,3 @@ export default function ProductModal({ open, product, onClose }: Props) {
         </Modal>
     );
 }
-const categoryLabels: Record<Product["category"], string> = {
-    homme: "Homme",
-    femme: "Femme",
-    enfant: "Enfant",
-    mixte: "Mixte",
-};

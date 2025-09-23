@@ -1,6 +1,6 @@
-// Mini service d'auth côté front (localStorage). Remplace par un vrai backend plus tard.
+import { httpRequest } from './httpClient';
 
-export type Role = "admin" | "seller" | "client";
+export type Role = 'admin' | 'seller' | 'client';
 
 export type AuthUser = {
     id: string;
@@ -8,34 +8,108 @@ export type AuthUser = {
     role: Role;
     email: string;
     token: string;
+    active: boolean;
+    expiresAt?: number;
 };
 
-const STORAGE_KEY = "auth-user-v1";
+const STORAGE_KEY = 'auth-user-v2';
 
-export function login(email: string, _password: string, role: Role): Promise<AuthUser> {
-    // → MOCK : accepte tout, génère un user. À remplacer par un appel API réel.
-    return new Promise((resolve) => {
-        const user: AuthUser = {
-            id: crypto.randomUUID(),
-            name: email.split("@")[0] || "Utilisateur",
-            role,
-            email,
-            token: crypto.randomUUID(),
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-        resolve(user);
+const mapRole = (role: string): Role => {
+    switch (role.toUpperCase()) {
+        case 'ADMIN':
+            return 'admin';
+        case 'SELLER':
+            return 'seller';
+        default:
+            return 'client';
+    }
+};
+
+const decodeToken = (token: string): { exp?: number } => {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return { exp: typeof payload.exp === 'number' ? payload.exp * 1000 : undefined };
+    } catch {
+        return {};
+    }
+};
+
+const saveSession = (session: AuthUser) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+};
+
+const clearSession = () => {
+    localStorage.removeItem(STORAGE_KEY);
+};
+
+export const getStoredSession = (): AuthUser | null => {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const session = JSON.parse(raw) as AuthUser;
+        if (session.expiresAt && Date.now() >= session.expiresAt) {
+            clearSession();
+            return null;
+        }
+        return session;
+    } catch {
+        clearSession();
+        return null;
+    }
+};
+
+export async function login(email: string, password: string): Promise<AuthUser> {
+    const response = await httpRequest<{ user: any; token: string }>('/auth/login', {
+        method: 'POST',
+        body: { email, password },
+        authenticated: false,
     });
+
+    const { user, token } = response;
+    const { exp } = decodeToken(token);
+    const session: AuthUser = {
+        id: user.id,
+        email: user.email,
+        name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email,
+        role: mapRole(user.role),
+        active: Boolean(user.active),
+        token,
+        expiresAt: exp,
+    };
+
+    saveSession(session);
+    return session;
 }
 
 export function logout(): void {
-    localStorage.removeItem(STORAGE_KEY);
+    clearSession();
 }
 
-export function getCurrentUser(): AuthUser | null {
+export async function refreshSession(): Promise<AuthUser | null> {
+    const session = getStoredSession();
+    if (!session) {
+        return null;
+    }
+
+    if (session.expiresAt && Date.now() >= session.expiresAt) {
+        clearSession();
+        return null;
+    }
+
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? (JSON.parse(raw) as AuthUser) : null;
+        const profile = await httpRequest<{ id: string; email: string; firstName: string; lastName: string; role: string; active: boolean }>('/users/me');
+        const updated: AuthUser = {
+            ...session,
+            id: profile.id,
+            email: profile.email,
+            name: `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim() || profile.email,
+            role: mapRole(profile.role),
+            active: profile.active,
+        };
+        saveSession(updated);
+        return updated;
     } catch {
+        clearSession();
         return null;
     }
 }

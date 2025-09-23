@@ -1,4 +1,3 @@
-import React from "react";
 
 /** ⚠️ Si ton adresse ne supporte pas les accents, remplace par
  *  "politique.confidentialite@shoozyou.com" (sans accent).
@@ -12,8 +11,6 @@ declare global {
 }
 
 export default function Privacy() {
-    const openCookiePrefs = () => window.__openCookiePrefs?.();
-
     return (
         <article className="legal">
             <header className="legal-header">

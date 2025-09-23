@@ -14,6 +14,13 @@ export type Product = {
   image?: string;
   genderId?: string;
   shoeTypeId?: string;
+  stock: number;
+  variants: Array<{
+    id: string;
+    sizeValue: string;
+    sizeLabel: string;
+    stock: number;
+  }>;
 };
 
 export type FetchProductsOptions = {
@@ -76,11 +83,18 @@ export async function fetchAllProducts(options?: FetchProductsOptions): Promise<
       sku: item.sku,
       name: item.name,
       description: item.description,
-      price: item.price,
+      price: typeof item.price === 'number' ? item.price : Number(item.price),
       image: item.imageUrl ?? undefined,
       genderId: item.genderId ?? undefined,
       shoeTypeId: item.shoeTypeId ?? undefined,
       category,
+      stock: typeof item.stock === 'number' ? item.stock : Number(item.stock),
+      variants: item.variants.map((variant) => ({
+        id: variant.id,
+        sizeValue: variant.sizeValue,
+        sizeLabel: variant.sizeLabel,
+        stock: typeof variant.stock === 'number' ? variant.stock : Number(variant.stock),
+      })),
     } satisfies Product;
   });
 }

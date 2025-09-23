@@ -1,4 +1,3 @@
-import React from "react";
 import { useCart } from "../context/CartContext.tsx";
 import { formatPrice } from "../utils/format";
 import { TrashIcon } from "../components/ui/icons";

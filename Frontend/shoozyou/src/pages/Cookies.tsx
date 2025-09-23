@@ -1,4 +1,3 @@
-import React from "react";
 
 const LAST_UPDATE = "22/09/2025";
 /** Remarque : l’adresse fournie contient deux « o » (coockies@...).

@@ -1,4 +1,3 @@
-import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import { childRoutes } from "./routes";
@@ -8,11 +7,11 @@ export default function App() {
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<MainLayout />}>
-                    {childRoutes.map((r, i) =>
-                        r.index ? (
-                            <Route key="index" index element={r.element} />
+                    {childRoutes.map((route) =>
+                        route.index ? (
+                            <Route key="index" index element={route.element} />
                         ) : (
-                            <Route key={r.path} path={r.path!} element={r.element} />
+                            <Route key={route.path} path={route.path!} element={route.element} />
                         )
                     )}
                 </Route>

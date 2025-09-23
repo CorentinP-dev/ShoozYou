@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { verifyJwt } from '../utils/jwt';
 import { HttpError } from '../utils/httpError';
+import { prisma } from '../config/prisma';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -9,7 +10,7 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-export const authenticate = (req: AuthenticatedRequest, _res: Response, next: NextFunction): void => {
+export const authenticate = async (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
   const header = req.headers.authorization;
   const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
 
@@ -19,9 +20,25 @@ export const authenticate = (req: AuthenticatedRequest, _res: Response, next: Ne
 
   try {
     const payload = verifyJwt(token);
-    req.user = { id: payload.sub, role: payload.role };
+    const dbUser = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, role: true, active: true }
+    });
+
+    if (!dbUser) {
+      throw new HttpError(401, 'Account not found');
+    }
+
+    if (!dbUser.active) {
+      throw new HttpError(403, 'Account is disabled');
+    }
+
+    req.user = { id: dbUser.id, role: dbUser.role };
     next();
   } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
     throw new HttpError(401, 'Invalid authentication token', error);
   }
 };

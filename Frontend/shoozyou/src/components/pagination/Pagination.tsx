@@ -1,4 +1,3 @@
-import React from "react";
 
 type Props = {
     page: number;          // 1-based

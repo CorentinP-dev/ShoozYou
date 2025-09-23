@@ -1,4 +1,3 @@
-import React from "react";
 import type { Product } from "../../services/productService";
 import { formatPrice } from "../../utils/format";
 

@@ -1,12 +1,28 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma';
 import { HttpError } from '../utils/httpError';
-import { UpdateProfileInput } from '../dtos/user.dto';
+import {
+  ListUsersQueryInput,
+  UpdateProfileInput,
+  UpdateUserRoleInput,
+  UpdateUserStatusInput
+} from '../dtos/user.dto';
 import { hashPassword } from '../utils/password';
+
+const userSelect = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+  active: true,
+  createdAt: true
+} satisfies Prisma.UserSelect;
 
 export const getUserById = async (userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, firstName: true, lastName: true, role: true, createdAt: true }
+    select: userSelect
   });
 
   if (!user) {
@@ -16,14 +32,20 @@ export const getUserById = async (userId: string) => {
   return user;
 };
 
-export const listUsers = () => {
+export const listUsers = (filters: ListUsersQueryInput = {}) => {
+  const where: Prisma.UserWhereInput = {};
+  if (filters.role) {
+    where.role = filters.role;
+  }
   return prisma.user.findMany({
-    select: { id: true, email: true, firstName: true, lastName: true, role: true, createdAt: true }
+    where,
+    select: userSelect,
+    orderBy: { createdAt: 'desc' }
   });
 };
 
 export const updateUserProfile = async (userId: string, payload: UpdateProfileInput) => {
-  const data: Record<string, unknown> = {};
+  const data: Prisma.UserUpdateInput = {};
 
   if (payload.firstName) data.firstName = payload.firstName;
   if (payload.lastName) data.lastName = payload.lastName;
@@ -33,13 +55,27 @@ export const updateUserProfile = async (userId: string, payload: UpdateProfileIn
     return getUserById(userId);
   }
 
-  const user = await prisma.user.update({
+  return prisma.user.update({
     where: { id: userId },
     data,
-    select: { id: true, email: true, firstName: true, lastName: true, role: true, createdAt: true }
+    select: userSelect
   });
+};
 
-  return user;
+export const updateUserRole = async (userId: string, payload: UpdateUserRoleInput) => {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { role: payload.role },
+    select: userSelect
+  });
+};
+
+export const updateUserStatus = async (userId: string, payload: UpdateUserStatusInput) => {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { active: payload.active },
+    select: userSelect
+  });
 };
 
 export const deleteUser = async (userId: string) => {

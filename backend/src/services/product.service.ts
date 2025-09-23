@@ -1,19 +1,77 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma';
 import { HttpError } from '../utils/httpError';
-import { CreateProductInput, ProductFilterInput, UpdateProductInput } from '../dtos/product.dto';
+import {
+  CreateProductInput,
+  CreateProductVariantInput,
+  ProductFilterInput,
+  UpdateProductInput,
+  UpdateProductVariantInput
+} from '../dtos/product.dto';
+
+const productInclude = {
+  brand: true,
+  gender: true,
+  shoeType: true,
+  variants: {
+    include: {
+      size: true
+    }
+  }
+} as const;
+
+const normalizeSizeValue = (value: string) => value.trim().toUpperCase();
+
+const mapVariantCreateInput = (variant: CreateProductVariantInput | UpdateProductVariantInput) => ({
+  sizeValue: variant.sizeValue.trim(),
+  stock: variant.stock,
+  metadata: variant.metadata as Prisma.InputJsonValue,
+  size: variant.sizeId
+    ? {
+        connect: {
+          id: variant.sizeId
+        }
+      }
+    : {
+        connectOrCreate: {
+          where: { value: normalizeSizeValue(variant.sizeValue) },
+          create: {
+            value: normalizeSizeValue(variant.sizeValue),
+            label: variant.sizeLabel ?? `${variant.sizeValue} EU`
+          }
+        }
+      }
+});
+
+const computeStockFromVariants = (variants?: ReadonlyArray<CreateProductVariantInput | UpdateProductVariantInput>) => {
+  if (!variants || variants.length === 0) {
+    return undefined;
+  }
+  return variants.reduce((total, variant) => total + variant.stock, 0);
+};
 
 export const createProduct = async (payload: CreateProductInput) => {
+  const { variants, stock, ...rest } = payload;
+  const computedStock = computeStockFromVariants(variants) ?? stock ?? 0;
+
   return prisma.product.create({
-    data: payload,
-    include: { brand: true, gender: true, shoeType: true }
+    data: {
+      ...rest,
+      stock: computedStock,
+      variants: variants?.length
+        ? {
+            create: variants.map(mapVariantCreateInput)
+          }
+        : undefined
+    },
+    include: productInclude
   });
 };
 
 export const getProductById = async (id: string) => {
   const product = await prisma.product.findUnique({
     where: { id },
-    include: { brand: true, gender: true, shoeType: true }
+    include: productInclude
   });
 
   if (!product) {
@@ -24,11 +82,32 @@ export const getProductById = async (id: string) => {
 };
 
 export const updateProduct = async (id: string, payload: UpdateProductInput) => {
+  const { variants, stock, ...rest } = payload;
+
   try {
-    return await prisma.product.update({
-      where: { id },
-      data: payload,
-      include: { brand: true, gender: true, shoeType: true }
+    return await prisma.$transaction(async (tx) => {
+      const data: Prisma.ProductUpdateInput = {
+        ...rest
+      };
+
+      const variantsProvided = variants !== undefined;
+      const computedStock = computeStockFromVariants(variants);
+
+      if (variantsProvided) {
+        data.stock = computedStock ?? stock ?? 0;
+        data.variants = {
+          deleteMany: {},
+          create: variants?.map(mapVariantCreateInput)
+        };
+      } else if (stock !== undefined) {
+        data.stock = stock;
+      }
+
+      return tx.product.update({
+        where: { id },
+        data,
+        include: productInclude
+      });
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
@@ -87,7 +166,7 @@ export const listProducts = async (filters: ProductFilterInput) => {
     prisma.product.count({ where }),
     prisma.product.findMany({
       where,
-      include: { brand: true, gender: true, shoeType: true },
+      include: productInclude,
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { createdAt: 'desc' }

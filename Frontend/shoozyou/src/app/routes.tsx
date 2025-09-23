@@ -1,4 +1,3 @@
-import React from "react";
 import Home from "../pages/Home";
 import Products from "../pages/Products";
 import Homme from "../pages/Homme";
@@ -12,7 +11,7 @@ import SellerDashboard from "../pages/seller/SellerDashboard";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import { RequireRole } from "../components/routing/RequireRole";
 
-export type ChildRoute = { path?: string; element: JSX.Element; index?: boolean };
+export type ChildRoute = { path?: string; element: ReactElement; index?: boolean };
 
 export const childRoutes: ChildRoute[] = [
     { index: true, element: <Home /> },
@@ -27,3 +26,4 @@ export const childRoutes: ChildRoute[] = [
     { path: "privacy", element: <Privacy /> },
     { path: "cookies", element: <CookiesPolicy /> },
 ];
+import type { ReactElement } from "react";

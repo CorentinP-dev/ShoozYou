@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RequireRole } from "../../components/routing/RequireRole";
 import {
     createAdminProduct,
@@ -110,11 +110,15 @@ export default function AdminDashboard() {
         });
     }, [items, q, genderMap, shoeTypeMap]);
 
+    const computeStockTotal = (product: AdminProductDto) =>
+        product.variants.reduce((total, variant) => total + variant.stock, 0);
+
     const stats = useMemo(() => {
         const totalProducts = items.length;
+        const totalStock = items.reduce((sum, product) => sum + computeStockTotal(product), 0);
         const orders = 0; // TODO: brancher lorsque l'API commandes sera prête
         const revenue = 0;
-        return { totalProducts, orders, revenue };
+        return { totalProducts, orders, revenue, totalStock };
     }, [items]);
 
     const displayCategory = (product: AdminProductDto) => {
@@ -253,8 +257,8 @@ export default function AdminDashboard() {
                                         </div>
                                     </td>
                                     <td>{displayCategory(p)}</td>
-                                    <td>{p.price.toFixed(2)}€</td>
-                                    <td>{p.stock}</td>
+                                <td>{p.price.toFixed(2)}€</td>
+                                <td>{computeStockTotal(p)}</td>
                                     <td className="table-actions">
                                         <button className="link" onClick={() => {
                                             setEditing(p);

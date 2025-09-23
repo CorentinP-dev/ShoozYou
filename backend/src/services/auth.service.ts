@@ -5,6 +5,15 @@ import { signJwt } from '../utils/jwt';
 import { HttpError } from '../utils/httpError';
 import { LoginInput, RegisterInput } from '../dtos/auth.dto';
 
+const authUserSelect = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+  active: true
+} as const;
+
 export const registerUser = async (payload: RegisterInput) => {
   const existing = await prisma.user.findUnique({ where: { email: payload.email } });
   if (existing) {
@@ -20,17 +29,15 @@ export const registerUser = async (payload: RegisterInput) => {
       firstName: payload.firstName,
       lastName: payload.lastName,
       role: (payload.role as Role | undefined) ?? Role.CLIENT,
+      active: true,
       cart: { create: {} }
     },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      role: true,
-      createdAt: true
-    }
+    select: authUserSelect
   });
+
+  if (!user.active) {
+    throw new HttpError(403, 'Account is disabled');
+  }
 
   const token = signJwt({ sub: user.id, role: user.role });
 
@@ -38,10 +45,14 @@ export const registerUser = async (payload: RegisterInput) => {
 };
 
 export const loginUser = async (payload: LoginInput) => {
-  const user = await prisma.user.findUnique({ where: { email: payload.email } });
+  const user = await prisma.user.findUnique({ where: { email: payload.email }, select: { ...authUserSelect, password: true } });
 
   if (!user) {
     throw new HttpError(401, 'Invalid credentials');
+  }
+
+  if (!user.active) {
+    throw new HttpError(403, 'Account is disabled');
   }
 
   const valid = await comparePassword(payload.password, user.password);
@@ -52,14 +63,10 @@ export const loginUser = async (payload: LoginInput) => {
 
   const token = signJwt({ sub: user.id, role: user.role });
 
+  const { password: _password, ...safeUser } = user;
+
   return {
-    user: {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role
-    },
+    user: safeUser,
     token
   };
 };

@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Modal from "../../components/ui/Modal";
-import type { CreateAdminProductPayload, AdminProductDto } from "../../services/adminApi";
+import type { AdminProductDto, AdminProductVariantInput, CreateAdminProductPayload } from "../../services/adminApi";
 import type { GenderDto, ShoeTypeDto } from "../../services/referenceApi";
 
 export type ProductFormValues = CreateAdminProductPayload;
+
+type VariantRow = AdminProductVariantInput & { tempId?: string };
 
 type Props = {
     open: boolean;
@@ -17,7 +19,7 @@ type Props = {
     errorMessage?: string | null;
 };
 
-const DEFAULT_STOCK = 50;
+const defaultVariant = (): VariantRow => ({ sizeValue: "", sizeLabel: "", stock: 0, tempId: crypto.randomUUID() });
 
 export default function ProductFormModal({
     open,
@@ -34,10 +36,10 @@ export default function ProductFormModal({
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [price, setPrice] = useState<number>(0);
-    const [stock, setStock] = useState<number>(DEFAULT_STOCK);
     const [imageUrl, setImageUrl] = useState<string>("");
     const [genderId, setGenderId] = useState<string | undefined>(undefined);
     const [shoeTypeId, setShoeTypeId] = useState<string | undefined>(undefined);
+    const [variants, setVariants] = useState<VariantRow[]>([defaultVariant()]);
     const [localError, setLocalError] = useState<string | null>(null);
 
     const genderOptions = useMemo(() => genders, [genders]);
@@ -52,19 +54,29 @@ export default function ProductFormModal({
             setName(initial.name);
             setDescription(initial.description);
             setPrice(initial.price);
-            setStock(initial.stock);
             setImageUrl(initial.imageUrl ?? "");
             setGenderId(initial.genderId ?? undefined);
             setShoeTypeId(initial.shoeTypeId ?? undefined);
+            setVariants(
+                initial.variants.length
+                    ? initial.variants.map(variant => ({
+                          id: variant.id,
+                          sizeId: variant.sizeId,
+                          sizeValue: variant.sizeValue,
+                          sizeLabel: variant.sizeLabel,
+                          stock: variant.stock,
+                      }))
+                    : [defaultVariant()]
+            );
         } else {
             setSku("");
             setName("");
             setDescription("");
             setPrice(0);
-            setStock(DEFAULT_STOCK);
             setImageUrl("");
             setGenderId(undefined);
             setShoeTypeId(undefined);
+            setVariants([defaultVariant()]);
         }
         setLocalError(null);
     }, [initial, open]);
@@ -80,6 +92,14 @@ export default function ProductFormModal({
     }, [shoeTypeOptions, shoeTypeId, initial?.shoeTypeId]);
 
     const disableSubmit = submitting || loadingReferences;
+    const computedStock = useMemo(() => variants.reduce((sum, variant) => sum + (Number.isFinite(variant.stock) ? variant.stock : 0), 0), [variants]);
+
+    const setVariant = (index: number, patch: Partial<VariantRow>) => {
+        setVariants(prev => prev.map((row, idx) => (idx === index ? { ...row, ...patch } : row)));
+    };
+
+    const addVariantRow = () => setVariants(prev => [...prev, defaultVariant()]);
+    const removeVariantRow = (index: number) => setVariants(prev => (prev.length > 1 ? prev.filter((_, idx) => idx !== index) : prev));
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -98,16 +118,30 @@ export default function ProductFormModal({
             return;
         }
 
+        const cleanedVariants = variants
+            .map(({ tempId, ...variant }) => variant)
+            .filter(variant => variant.sizeValue.trim().length > 0);
+
+        if (cleanedVariants.length === 0) {
+            setLocalError("Ajoutez au moins une taille pour ce produit");
+            return;
+        }
+
         try {
             await onSubmit({
                 sku: sku.trim(),
                 name: name.trim(),
                 description: description.trim(),
                 price: Number(price),
-                stock: Number(stock),
+                stock: computedStock,
                 imageUrl: imageUrl.trim() || undefined,
                 genderId,
                 shoeTypeId,
+                variants: cleanedVariants.map(variant => ({
+                    ...variant,
+                    sizeValue: variant.sizeValue.trim(),
+                    sizeLabel: variant.sizeLabel?.trim() || `${variant.sizeValue.trim()} EU`,
+                })),
             });
         } catch (error) {
             const message = error instanceof Error ? error.message : "Une erreur est survenue";
@@ -116,7 +150,7 @@ export default function ProductFormModal({
     };
 
     return (
-        <Modal open={open} onClose={onClose} width={720}>
+        <Modal open={open} onClose={onClose} width={880}>
             <form onSubmit={handleSubmit}>
                 <h2 style={{ marginTop: 0 }}>{initial ? "Modifier le produit" : "Ajouter un produit"}</h2>
 
@@ -142,8 +176,8 @@ export default function ProductFormModal({
                         <input type="number" step="0.01" min="0" value={price} onChange={e => setPrice(Number(e.target.value))} required disabled={disableSubmit} />
                     </label>
                     <label className="field">
-                        <span>Stock</span>
-                        <input type="number" min="0" value={stock} onChange={e => setStock(Number(e.target.value))} required disabled={disableSubmit} />
+                        <span>Stock total</span>
+                        <input type="number" value={computedStock} readOnly disabled />
                     </label>
                     <label className="field">
                         <span>Genre</span>
@@ -165,6 +199,49 @@ export default function ProductFormModal({
                             ))}
                         </select>
                     </label>
+                </div>
+
+                <div style={{ marginTop: 16 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 8 }}>Tailles & stocks</div>
+                    <div className="sizes-editor">
+                        {variants.map((variant, index) => (
+                            <div className="sizes-row" key={variant.id ?? variant.tempId ?? index}>
+                                <input
+                                    className="sz-input"
+                                    type="text"
+                                    placeholder="Taille"
+                                    value={variant.sizeValue}
+                                    onChange={e => setVariant(index, { sizeValue: e.target.value })}
+                                    disabled={disableSubmit}
+                                    required
+                                />
+                                <input
+                                    className="sz-input"
+                                    type="number"
+                                    placeholder="Libellé"
+                                    value={variant.sizeLabel ?? ""}
+                                    onChange={e => setVariant(index, { sizeLabel: e.target.value })}
+                                    disabled={disableSubmit}
+                                />
+                                <input
+                                    className="sz-input"
+                                    type="number"
+                                    placeholder="Stock"
+                                    min={0}
+                                    value={variant.stock}
+                                    onChange={e => setVariant(index, { stock: Number(e.target.value) })}
+                                    disabled={disableSubmit}
+                                    required
+                                />
+                                <button type="button" className="btn" onClick={() => removeVariantRow(index)} disabled={disableSubmit}>
+                                    Retirer
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                    <button type="button" className="btn" onClick={addVariantRow} disabled={disableSubmit}>
+                        + Ajouter une taille
+                    </button>
                 </div>
 
                 {(localError || errorMessage) && (
