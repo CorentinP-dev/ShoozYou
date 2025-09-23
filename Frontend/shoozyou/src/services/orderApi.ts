@@ -32,6 +32,9 @@ type RawOrder = {
   userId: UUID;
   status: 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED' | 'SHIPPED' | 'DELIVERED';
   total: number | string;
+  shippingAddress?: Record<string, unknown> | null;
+  billingAddress?: Record<string, unknown> | null;
+  paymentSummary?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
   items: RawOrderItem[];
@@ -69,6 +72,9 @@ export interface OrderDto {
   updatedAt: string;
   items: OrderItemDto[];
   payment?: PaymentDto | null;
+  shippingAddress?: Record<string, unknown> | null;
+  billingAddress?: Record<string, unknown> | null;
+  paymentSummary?: Record<string, unknown> | null;
 }
 
 const toNumber = (value: number | string): number => {
@@ -102,11 +108,73 @@ const mapOrder = (order: RawOrder): OrderDto => ({
         createdAt: order.payment.createdAt,
       }
     : null,
+  shippingAddress: order.shippingAddress ?? undefined,
+  billingAddress: order.billingAddress ?? undefined,
+  paymentSummary: order.paymentSummary ?? undefined,
 });
 
 export async function fetchMyOrders(): Promise<OrderDto[]> {
   const response = await httpRequest<RawOrder[]>('/orders/my', { method: 'GET' });
   return response.map(mapOrder);
+}
+
+export type CheckoutAddress = {
+  fullName: string;
+  line1: string;
+  line2?: string;
+  postalCode: string;
+  city: string;
+  country: string;
+  phone: string;
+};
+
+export type CheckoutPaymentMethod = {
+  cardholderName: string;
+  cardNumber: string;
+  expMonth: string;
+  expYear: string;
+  cvc: string;
+};
+
+export type CheckoutItem = {
+  productId: string;
+  quantity: number;
+};
+
+export type CheckoutPayload = {
+  items: CheckoutItem[];
+  paymentProvider: string;
+  shippingAddress: CheckoutAddress;
+  billingAddress?: CheckoutAddress;
+  paymentMethod: CheckoutPaymentMethod;
+};
+
+export type CheckoutResponse = {
+  orderId: string;
+  orderStatus: string;
+  payment: PaymentDto;
+};
+
+export async function submitCheckout(payload: CheckoutPayload): Promise<CheckoutResponse> {
+  const response = await httpRequest<{ orderId: string; orderStatus: string; payment: RawPayment }>(
+    '/orders',
+    {
+      method: 'POST',
+      body: payload,
+    }
+  );
+
+  return {
+    orderId: response.orderId,
+    orderStatus: response.orderStatus,
+    payment: {
+      id: response.payment.id,
+      status: response.payment.status,
+      provider: response.payment.provider,
+      metadata: response.payment.metadata ?? undefined,
+      createdAt: response.payment.createdAt,
+    },
+  } satisfies CheckoutResponse;
 }
 
 export const displayOrderStatus = (status: OrderDto['status']): string => {

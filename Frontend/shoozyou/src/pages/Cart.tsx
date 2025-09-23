@@ -1,9 +1,11 @@
 import { useCart } from "../context/CartContext.tsx";
 import { formatPrice } from "../utils/format";
 import { TrashIcon } from "../components/ui/icons";
+import { useNavigate } from "react-router-dom";
 
 export default function Cart() {
     const { items, subtotal, setQty, remove, clear } = useCart();
+    const navigate = useNavigate();
 
     const shipping = items.length > 0 ? 6.9 : 0;
     const total = subtotal + shipping;
@@ -57,7 +59,13 @@ export default function Cart() {
                         <div className="sum-row"><span>Sous-total</span><span>{formatPrice(subtotal)}</span></div>
                         <div className="sum-row"><span>Livraison</span><span>{formatPrice(shipping)}</span></div>
                         <div className="sum-row total"><span>Total</span><span>{formatPrice(total)}</span></div>
-                        <button className="btn-solid" onClick={() => alert("Paiement fictif 🙂")}>Payer</button>
+                        <button
+                            className="btn-solid"
+                            onClick={() => navigate("/checkout")}
+                            disabled={items.length === 0}
+                        >
+                            Passer au paiement
+                        </button>
                     </aside>
                 </div>
             )}

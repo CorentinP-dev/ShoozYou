@@ -683,6 +683,105 @@ button:focus-visible{
 }
 
 /* =========================
+   Checkout
+   ========================= */
+.checkout-page{
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.checkout-grid{
+    display: grid;
+    gap: 20px;
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+}
+
+.checkout-card,
+.checkout-summary{
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: var(--shadow-1);
+    padding: 20px;
+}
+
+.checkout-card h2,
+.checkout-summary h2{
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+.checkout-form-grid{
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.payment-grid{
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.billing-header{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.checkbox-inline{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+}
+
+.checkout-summary{
+    align-self: start;
+    position: sticky;
+    top: calc(var(--nav-height) + 24px);
+}
+
+.summary-line{
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.summary-line.total{
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #ececf9;
+}
+
+.checkout-success{
+    background: #ecfdf5;
+    border-radius: 18px;
+    padding: 24px;
+    max-width: 640px;
+    box-shadow: var(--shadow-1);
+}
+
+.checkout-success h2{
+    margin-top: 0;
+}
+
+.checkout-success p{
+    margin-bottom: 12px;
+}
+
+@media (max-width: 1024px){
+    .checkout-grid{
+        grid-template-columns: 1fr;
+    }
+    .checkout-summary{
+        position: static;
+    }
+}
+
+/* =========================
    Account area
    ========================= */
 .account-grid{

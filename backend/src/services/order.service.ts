@@ -5,7 +5,7 @@ import { CreateOrderInput, UpdateOrderStatusInput } from '../dtos/order.dto';
 import { processPayment } from './payment.service';
 
 export const createOrder = async (userId: string, payload: CreateOrderInput) => {
-  const { items, paymentProvider } = payload;
+  const { items, paymentProvider, shippingAddress, billingAddress, paymentMethod } = payload;
   const productIds = items.map((item) => item.productId);
 
   const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
@@ -29,12 +29,24 @@ export const createOrder = async (userId: string, payload: CreateOrderInput) => 
     return acc.plus(new Prisma.Decimal(product.price).times(item.quantity));
   }, new Prisma.Decimal(0));
 
+  const normalizedCardNumber = paymentMethod.cardNumber.replace(/\s+/g, '');
+  const paymentSummary = {
+    provider: paymentProvider,
+    cardholderName: paymentMethod.cardholderName,
+    cardLast4: normalizedCardNumber.slice(-4),
+    expMonth: paymentMethod.expMonth,
+    expYear: paymentMethod.expYear
+  } satisfies Record<string, unknown>;
+
   const order = await prisma.$transaction(async (tx) => {
     const createdOrder = await tx.order.create({
       data: {
         userId,
         status: 'PENDING',
         total,
+        shippingAddress: shippingAddress as Prisma.InputJsonValue,
+        billingAddress: (billingAddress ?? shippingAddress) as Prisma.InputJsonValue,
+        paymentSummary: paymentSummary as Prisma.InputJsonValue,
         items: {
           create: items.map((item) => ({
             productId: item.productId,
@@ -65,9 +77,11 @@ export const createOrder = async (userId: string, payload: CreateOrderInput) => 
     return createdOrder;
   });
 
-  const paymentResult = await processPayment(order.id, paymentProvider);
+  const paymentResult = await processPayment(order.id, paymentProvider, {
+    ...paymentSummary
+  });
 
-  return { orderId: order.id, payment: paymentResult };
+  return { orderId: order.id, orderStatus: paymentResult.orderStatus, payment: paymentResult.payment };
 };
 
 export const listOrdersForUser = (userId: string) => {

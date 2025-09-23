@@ -16,7 +16,11 @@ const simulateProviderPayment = async (_orderId: string): Promise<PaymentResult>
   };
 };
 
-export const processPayment = async (orderId: string, provider: string) => {
+export const processPayment = async (
+  orderId: string,
+  provider: string,
+  details?: Record<string, unknown>
+) => {
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) {
     throw new HttpError(404, 'Order not found');
@@ -29,13 +33,13 @@ export const processPayment = async (orderId: string, provider: string) => {
     update: {
       status: result.status,
       provider,
-      metadata: { reference: result.reference }
+      metadata: { reference: result.reference, ...(details ?? {}) }
     },
     create: {
       orderId,
       provider,
       status: result.status,
-      metadata: { reference: result.reference }
+      metadata: { reference: result.reference, ...(details ?? {}) }
     }
   });
 
