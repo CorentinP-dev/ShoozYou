@@ -1,69 +1,37 @@
-# React + TypeScript + Vite
+# ShoozYou – Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Application React 19 + Vite pour la plateforme e-commerce ShoozYou.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Scripts
+```bash
+npm install      # dépendances
+npm run dev      # serveur Vite (http://localhost:5173)
+npm run build    # build production dans dist/
+npm run preview  # prévisualisation du build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Variables d’environnement
+Créer un fichier `.env` à la racine du dossier :
 ```
+VITE_API_URL=http://localhost:4000/api
+```
+Adapter l’URL avec celle du backend (Railway en prod).
+
+## Fonctionnalités
+- Authentification client/vendeur/admin (JWT). 
+- Catalogue produits avec recherche, filtres (marque, type, prix).
+- Panier local + tunnel de paiement fictif (adresse, carte, résumé).
+- Espace client : profil, commandes.
+- Espace vendeur : inventaire + métriques commandes/CA en temps réel.
+- Espace admin : gestion produits, rôles, statistiques.
+
+## Déploiement Vercel
+1. Root directory : `Frontend/shoozyou`.
+2. Build command : `npm run build`. Output : `dist`.
+3. Ajouter `VITE_API_URL=https://<votre-api>.up.railway.app/api`.
+4. Node version recommandée : 20.x.
+
+## QA
+- Vérifier `/checkout` (création commande + vidage panier).
+- Vérifier `/account`, `/seller`, `/admin` selon les rôles.
+- `npm run build` doit passer sans avertissement (hors message Node 21).
