@@ -174,3 +174,14 @@ export async function deleteAdminProduct(productId: string): Promise<void> {
     method: 'DELETE',
   });
 }
+
+export interface OrderMetricsDto {
+  totalOrders: number;
+  totalRevenue: number;
+}
+
+export async function fetchOrderMetrics(): Promise<OrderMetricsDto> {
+  return httpRequest<OrderMetricsDto>('/orders/metrics', {
+    method: 'GET',
+  });
+}

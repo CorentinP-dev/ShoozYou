@@ -145,3 +145,20 @@ export const listAllOrders = () => {
     orderBy: { createdAt: 'desc' }
   });
 };
+
+export const getOrderMetrics = async () => {
+  const [totalOrders, paidAggregate] = await prisma.$transaction([
+    prisma.order.count(),
+    prisma.order.aggregate({
+      _sum: { total: true },
+      where: { status: 'PAID' }
+    })
+  ]);
+
+  const totalRevenueDecimal = paidAggregate._sum.total ?? new Prisma.Decimal(0);
+
+  return {
+    totalOrders,
+    totalRevenue: Number(totalRevenueDecimal)
+  };
+};

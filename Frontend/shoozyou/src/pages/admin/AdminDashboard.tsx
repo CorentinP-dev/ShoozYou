@@ -4,6 +4,7 @@ import {
     createAdminProduct,
     deleteAdminProduct,
     fetchAdminProducts,
+    fetchOrderMetrics,
     updateAdminProduct,
     type AdminProductDto,
     type CreateAdminProductPayload,
@@ -12,6 +13,7 @@ import { fetchGenders, fetchShoeTypes, type GenderDto, type ShoeTypeDto } from "
 import ProductFormModal from "./ProductFormModal";
 import ConfirmDialog from "./ConfirmDialog";
 import UserRolesModal from "./UserRolesModal";
+import { formatPrice } from "../../utils/format";
 
 export default function AdminDashboard() {
     const [q, setQ] = useState("");
@@ -36,6 +38,10 @@ export default function AdminDashboard() {
     const [formSubmitting, setFormSubmitting] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    const [orderMetrics, setOrderMetrics] = useState<{ totalOrders: number; totalRevenue: number }>({ totalOrders: 0, totalRevenue: 0 });
+    const [orderMetricsError, setOrderMetricsError] = useState<string | null>(null);
+    const [orderMetricsLoading, setOrderMetricsLoading] = useState(false);
 
     const genderMap = useMemo(() => new Map(genders.map(g => [g.id, g.name])), [genders]);
     const shoeTypeMap = useMemo(() => new Map(shoeTypes.map(t => [t.id, t.name])), [shoeTypes]);
@@ -100,16 +106,44 @@ export default function AdminDashboard() {
         };
     }, []);
 
+    useEffect(() => {
+        let cancelled = false;
+        const loadMetrics = async () => {
+            try {
+                setOrderMetricsLoading(true);
+                const metrics = await fetchOrderMetrics();
+                if (!cancelled) {
+                    setOrderMetrics(metrics);
+                    setOrderMetricsError(null);
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    const message = err instanceof Error ? err.message : "Impossible de charger les métriques commandes";
+                    setOrderMetricsError(message);
+                }
+            } finally {
+                if (!cancelled) {
+                    setOrderMetricsLoading(false);
+                }
+            }
+        };
+
+        loadMetrics();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
     const computeStockTotal = (product: AdminProductDto) =>
         product.variants.reduce((total, variant) => total + variant.stock, 0);
 
     const stats = useMemo(() => {
         const totalProducts = total;
         const totalStock = items.reduce((sum, product) => sum + computeStockTotal(product), 0);
-        const orders = 0; // TODO: brancher lorsque l'API commandes sera prête
-        const revenue = 0;
+        const orders = orderMetrics.totalOrders;
+        const revenue = orderMetrics.totalRevenue;
         return { totalProducts, orders, revenue, totalStock };
-    }, [items, total]);
+    }, [items, total, orderMetrics]);
 
     const pageRange = useMemo(() => {
         const maxButtons = 7;
@@ -228,15 +262,21 @@ export default function AdminDashboard() {
                     </div>
                     <div className="stat-card">
                         <div className="stat-title">Commandes</div>
-                        <div className="stat-value">{stats.orders}</div>
+                        <div className="stat-value">{orderMetricsLoading ? "…" : stats.orders}</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-title">Chiffre d'affaires</div>
                         <div className="stat-value" style={{color: "#7C3AED"}}>
-                            {stats.revenue.toFixed(2)}€
+                            {orderMetricsLoading ? "…" : formatPrice(stats.revenue)}
                         </div>
                     </div>
                 </div>
+
+                {orderMetricsError && (
+                    <div style={{ color: '#dc2626', marginTop: 8 }}>
+                        {orderMetricsError}
+                    </div>
+                )}
 
                 {/* Toolbar */}
                 <div className="admin-toolbar">

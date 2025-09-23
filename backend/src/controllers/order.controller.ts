@@ -1,5 +1,12 @@
 import { Response } from 'express';
-import { createOrder, getOrderById, listAllOrders, listOrdersForUser, updateOrderStatus } from '../services/order.service';
+import {
+  createOrder,
+  getOrderById,
+  getOrderMetrics,
+  listAllOrders,
+  listOrdersForUser,
+  updateOrderStatus
+} from '../services/order.service';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
 
 export const createOrderHandler = async (req: AuthenticatedRequest, res: Response) => {
@@ -29,4 +36,9 @@ export const listAllOrdersHandler = async (_req: AuthenticatedRequest, res: Resp
 export const updateOrderStatusHandler = async (req: AuthenticatedRequest, res: Response) => {
   const order = await updateOrderStatus(req.params.orderId, req.body);
   res.json({ status: 'success', data: order });
+};
+
+export const getOrderMetricsHandler = async (_req: AuthenticatedRequest, res: Response) => {
+  const metrics = await getOrderMetrics();
+  res.json({ status: 'success', data: metrics });
 };

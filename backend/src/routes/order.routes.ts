@@ -4,6 +4,7 @@ import {
   getOrderHandler,
   listAllOrdersHandler,
   listMyOrdersHandler,
+  getOrderMetricsHandler,
   updateOrderStatusHandler
 } from '../controllers/order.controller';
 import { authenticate, authorizeRoles } from '../middlewares/authMiddleware';
@@ -16,6 +17,7 @@ orderRouter.use(authenticate);
 
 orderRouter.post('/', validateBody(createOrderSchema), createOrderHandler);
 orderRouter.get('/my', listMyOrdersHandler);
+orderRouter.get('/metrics', authorizeRoles('ADMIN', 'SELLER'), getOrderMetricsHandler);
 orderRouter.get('/:orderId', getOrderHandler);
 
 orderRouter.get('/', authorizeRoles('ADMIN', 'SELLER'), listAllOrdersHandler);

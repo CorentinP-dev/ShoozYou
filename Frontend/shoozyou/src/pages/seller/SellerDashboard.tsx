@@ -8,6 +8,7 @@ import {
     type SellerInventoryProduct,
     type SellerInventoryStats,
 } from "../../services/sellerApi";
+import { fetchOrderMetrics } from "../../services/adminApi";
 
 type CategoryFilter = "Toutes" | "Homme" | "Femme" | "Enfant" | "Mixte";
 type StockFilter = "Tous" | "En stock" | "Stock faible" | "Rupture";
@@ -44,6 +45,9 @@ export default function SellerDashboard() {
     const [error, setError] = useState<string | null>(null);
     const [products, setProducts] = useState<SellerInventoryProduct[]>([]);
     const [stats, setStats] = useState<SellerInventoryStats | null>(null);
+    const [orderMetrics, setOrderMetrics] = useState<{ totalOrders: number; totalRevenue: number }>({ totalOrders: 0, totalRevenue: 0 });
+    const [orderMetricsLoading, setOrderMetricsLoading] = useState(false);
+    const [orderMetricsError, setOrderMetricsError] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -67,6 +71,34 @@ export default function SellerDashboard() {
         };
 
         load();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    useEffect(() => {
+        let cancelled = false;
+        const loadMetrics = async () => {
+            try {
+                setOrderMetricsLoading(true);
+                const metrics = await fetchOrderMetrics();
+                if (!cancelled) {
+                    setOrderMetrics(metrics);
+                    setOrderMetricsError(null);
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    const message = err instanceof Error ? err.message : "Impossible de charger les commandes";
+                    setOrderMetricsError(message);
+                }
+            } finally {
+                if (!cancelled) {
+                    setOrderMetricsLoading(false);
+                }
+            }
+        };
+
+        loadMetrics();
         return () => {
             cancelled = true;
         };
@@ -143,9 +175,21 @@ export default function SellerDashboard() {
                     </div>
                     <div className="stat-card">
                         <div className="stat-title">Commandes</div>
-                        <div className="stat-value">0</div>
+                        <div className="stat-value">{orderMetricsLoading ? "…" : orderMetrics.totalOrders}</div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-title">Chiffre d'affaires</div>
+                        <div className="stat-value" style={{ color: "#7C3AED" }}>
+                            {orderMetricsLoading ? "…" : formatPrice(orderMetrics.totalRevenue)}
+                        </div>
                     </div>
                 </div>
+
+                {orderMetricsError && (
+                    <div style={{ color: '#dc2626', marginTop: 8 }}>
+                        {orderMetricsError}
+                    </div>
+                )}
 
                 <div className="admin-toolbar">
                     <input
